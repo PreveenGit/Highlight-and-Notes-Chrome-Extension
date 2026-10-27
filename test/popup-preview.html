@@ -1,0 +1,48 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <title>Popup preview</title>
+    <style>
+      #site { position: fixed; top: 0; right: 0; width: calc(100vw - 380px); height: 100vh; border: 0; border-left: 1px solid #ccc; }
+    </style>
+  </head>
+  <body>
+    <!-- Development only: renders popup/popup.html on the left, wired to test-page.html?stub
+         on the right through test/chrome-stub.js. Reload this page to re-open the "popup". -->
+    <iframe id="site" src="test-page.html?stub"></iframe>
+    <script src="chrome-stub.js"></script>
+    <script>
+      (async () => {
+        const frame = document.getElementById('site');
+        // Wait for the content script in the frame to start.
+        await new Promise((resolve) => {
+          const poll = () => (frame.contentWindow.HL && frame.contentWindow.HL.started ? resolve() : setTimeout(poll, 50));
+          poll();
+        });
+        window.__hlTabSend = (msg) => frame.contentWindow.__hlSend(msg);
+
+        const popupUrl = new URL('../popup/popup.html', location.href);
+        const html = await (await fetch(popupUrl)).text();
+        const doc = new DOMParser().parseFromString(html, 'text/html');
+        for (const link of doc.querySelectorAll('link[rel=stylesheet]')) {
+          const el = document.createElement('link');
+          el.rel = 'stylesheet';
+          el.href = new URL(link.getAttribute('href'), popupUrl);
+          document.head.append(el);
+        }
+        const scripts = [...doc.querySelectorAll('script[src]')].map((s) => new URL(s.getAttribute('src'), popupUrl).href);
+        doc.querySelectorAll('script').forEach((s) => s.remove());
+        document.body.insertAdjacentHTML('afterbegin', doc.body.innerHTML);
+        for (const src of scripts) {
+          await new Promise((resolve) => {
+            const s = document.createElement('script');
+            s.src = src;
+            s.onload = resolve;
+            document.body.append(s);
+          });
+        }
+      })();
+    </script>
+  </body>
+</html>

@@ -1,0 +1,105 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Highlight test page</title>
+    <style>
+      html { background: #fff; }
+      body { max-width: 720px; margin: 40px auto; padding: 0 16px; font: 16px/1.6 Georgia, serif; color: #222; }
+      h1, h2 { font-family: system-ui, sans-serif; }
+      table { border-collapse: collapse; }
+      td, th { border: 1px solid #ccc; padding: 4px 10px; }
+      pre { background: #f4f4f4; padding: 10px; }
+      .box { border: 1px dashed #999; padding: 8px; }
+      #late { background: #f6fbff; }
+    </style>
+  </head>
+  <body>
+    <h1>Highlight test page</h1>
+    <p id="intro">
+      Select a word or a sentence on this page and pick a color from the toolbar. Highlights should come back
+      in the same place after you <strong>reload the page</strong>, even when a selection crosses
+      <em>formatting</em>, <a href="#links">links</a>, or several paragraphs.
+    </p>
+
+    <h2>Mixed formatting</h2>
+    <p id="mixed">
+      The quick <b>brown fox</b> jumps over the <i>lazy dog</i>. Pack my <code>box</code> with five dozen
+      <span style="text-decoration: underline">liquor jugs</span>.
+    </p>
+    <p id="repeat">
+      The cat sat on the mat. The dog sat on the log. The bird sat on the wire, and the cat watched the bird.
+    </p>
+
+    <h2>List and table</h2>
+    <ul id="list">
+      <li>First item in the list</li>
+      <li>Second item with <b>bold text</b></li>
+      <li>Third item in the list</li>
+    </ul>
+    <table id="table">
+      <tr><th>Planet</th><th>Moons</th></tr>
+      <tr><td>Earth</td><td>One moon</td></tr>
+      <tr><td>Mars</td><td>Two moons</td></tr>
+    </table>
+
+    <h2>Quote and code</h2>
+    <blockquote id="quote">Simplicity is prerequisite for reliability.</blockquote>
+    <pre id="code">function hello() {
+  return 'world';
+}</pre>
+
+    <h2>Should not be highlighted</h2>
+    <p><input value="Text inside an input" size="30" /></p>
+    <p><textarea rows="2" cols="40">Text inside a textarea</textarea></p>
+    <div class="box" contenteditable="true">This box is editable, so highlighting is disabled here.</div>
+
+    <h2>Content that loads late</h2>
+    <div id="late"><p><em>Loading… this section appears two seconds after the page loads.</em></p></div>
+
+    <h2>Single-page-app navigation</h2>
+    <p>
+      <button id="spa" type="button">Go to "page 2" with history.pushState</button>
+      The URL changes without a reload, so highlights from this page should disappear and page 2's should appear.
+    </p>
+
+    <script>
+      setTimeout(() => {
+        document.getElementById('late').innerHTML =
+          '<p>This paragraph was inserted after load. A highlight made here should still be restored after a reload, once the text shows up again.</p>';
+      }, 2000);
+
+      const page1Url = location.href.replace(/#.*$/, '');
+      const page2Url = page1Url + (location.search ? '&' : '?') + 'page=2';
+      document.getElementById('spa').addEventListener('click', () => {
+        const page2 = location.href !== page2Url;
+        history.pushState({}, '', page2 ? page2Url : page1Url);
+        document.getElementById('spa').textContent = page2 ? 'Go back to "page 1"' : 'Go to "page 2" with history.pushState';
+        document.getElementById('intro').textContent = page2
+          ? 'You are on page 2 now. This intro text is different, so page 1 highlights here are gone.'
+          : 'You are back on page 1. Select text anywhere to highlight it.';
+      });
+
+      // ?stub runs the extension's content scripts directly on this page with a fake
+      // chrome.* API, for development without installing the extension.
+      // Don't use ?stub while the real extension is installed: both would run.
+      if (new URLSearchParams(location.search).has('stub')) {
+        const css = document.createElement('link');
+        css.rel = 'stylesheet';
+        css.href = '../content/highlight.css';
+        document.head.append(css);
+        const scripts = ['chrome-stub.js', '../shared/common.js', '../content/anchor.js', '../content/marker.js',
+          '../content/store.js', '../content/toolbar.js', '../content/main.js'];
+        (function next() {
+          const src = scripts.shift();
+          if (!src) return;
+          const s = document.createElement('script');
+          s.src = src;
+          s.onload = next;
+          document.body.append(s);
+        })();
+      }
+    </script>
+  </body>
+</html>

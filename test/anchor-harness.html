@@ -1,0 +1,196 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <title>Anchor harness</title>
+    <style>
+      body { font: 14px/1.5 system-ui, sans-serif; margin: 24px; }
+      .pass { color: #188038; }
+      .fail { color: #d93025; }
+      #fixture { position: absolute; left: -9999px; } /* rendered, so computed styles are real */
+    </style>
+  </head>
+  <body>
+    <h1 id="summary">Running…</h1>
+    <ol id="results"></ol>
+    <div id="fixture"></div>
+
+    <script src="../shared/common.js"></script>
+    <script src="../content/anchor.js"></script>
+    <script src="../content/marker.js"></script>
+    <script src="../content/store.js"></script>
+    <script>
+      const fixture = document.getElementById('fixture');
+      const { anchor, marker } = HL;
+      const results = [];
+
+      function test(name, fn) {
+        try {
+          fn();
+          results.push({ name, ok: true });
+        } catch (err) {
+          results.push({ name, ok: false, error: err.message });
+        }
+      }
+
+      function eq(actual, expected, label = 'value') {
+        if (actual !== expected) {
+          throw new Error(`${label}: expected ${JSON.stringify(expected)}, got ${JSON.stringify(actual)}`);
+        }
+      }
+
+      function setup(html) {
+        fixture.innerHTML = html;
+        return anchor.buildIndex(fixture);
+      }
+
+      // Range over the text `from`...`to` (inclusive), located through the text index.
+      function rangeOver(from, to = from, nth = 0) {
+        const index = anchor.buildIndex(fixture);
+        let start = -1;
+        for (let i = 0; i <= nth; i++) start = index.text.indexOf(from, start + 1);
+        const end = index.text.indexOf(to, start) + to.length;
+        return anchor.toRange(index, start, end);
+      }
+
+      const marksText = (id) => marker.getMarks(id).map((m) => m.textContent).join('');
+
+      const CROSS = '<p>Hello <b>bold</b> and <a href="#">link</a> text.</p>\n<p>Second paragraph here.</p>';
+
+      test('wraps a selection across bold, link and paragraph boundaries', () => {
+        setup(CROSS);
+        const marks = marker.wrapRange(rangeOver('lo', 'Sec'), 'a', 'yellow');
+        eq(marksText('a'), 'lo bold and link text.Sec', 'marked text');
+        eq(marks.length, 6, 'mark count');
+        eq([...fixture.childNodes].some((n) => n.nodeName === 'MARK'), false, 'mark between paragraphs');
+      });
+
+      test('unwrap restores the original markup', () => {
+        setup(CROSS);
+        const before = fixture.innerHTML;
+        marker.wrapRange(rangeOver('lo', 'Sec'), 'a', 'green');
+        marker.unwrap('a');
+        eq(fixture.innerHTML, before, 'markup');
+      });
+
+      test('recolor changes every mark of a highlight', () => {
+        setup(CROSS);
+        marker.wrapRange(rangeOver('bold', 'link'), 'a', 'yellow');
+        marker.recolor('a', 'pink');
+        eq(marker.getMarks('a').every((m) => m.dataset.hlColor === 'pink'), true, 'all pink');
+      });
+
+      test('anchor round-trips through save and restore', () => {
+        const index = setup(CROSS);
+        const saved = anchor.fromRange(index, rangeOver('lo', 'Sec'));
+        eq(saved.quote.exact.replace(/\s+/g, ' '), 'lo bold and link text. Sec', 'exact');
+        const at = anchor.locate(anchor.buildIndex(fixture), saved);
+        eq(at.start, saved.position.start, 'start');
+        const range = anchor.toRange(anchor.buildIndex(fixture), at.start, at.end);
+        eq(range.toString(), saved.quote.exact, 'restored text');
+      });
+
+      test('trims whitespace around the selection', () => {
+        const index = setup('<p>alpha beta gamma</p>');
+        const saved = anchor.fromRange(index, anchor.toRange(index, 5, 11)); // " beta "
+        eq(saved.quote.exact, 'beta', 'exact');
+      });
+
+      test('handles element boundaries (triple-click style range)', () => {
+        const index = setup('<p id="p1">First line</p><p id="p2">Second line</p>');
+        const range = document.createRange();
+        range.setStart(document.getElementById('p1'), 0);
+        range.setEnd(document.getElementById('p2'), 0);
+        eq(anchor.fromRange(index, range).quote.exact, 'First line', 'exact');
+      });
+
+      test('finds the highlight after text is added before it', () => {
+        const index = setup('<p>Intro.</p><p>The quick brown fox jumps over the lazy dog.</p>');
+        const saved = anchor.fromRange(index, rangeOver('brown fox'));
+        const added = 'A brand new paragraph pushes everything down.';
+        fixture.insertAdjacentHTML('afterbegin', `<p>${added}</p>`);
+        const after = anchor.buildIndex(fixture);
+        const at = anchor.locate(after, saved);
+        eq(after.text.slice(at.start, at.end), 'brown fox', 'found text');
+        eq(at.start, saved.position.start + added.length, 'new start');
+      });
+
+      test('uses context, not the old position, to pick a repeated word', () => {
+        const index = setup('<p>The cat sat on the mat. The dog sat on the log.</p>');
+        const saved = anchor.fromRange(index, rangeOver('sat', 'sat', 1)); // the dog's "sat"
+        setup('<p>The dog sat on the log. The cat sat on the mat.</p>'); // cat's "sat" now at the old offset
+        const after = anchor.buildIndex(fixture);
+        const at = anchor.locate(after, saved);
+        eq(after.text.slice(at.start - 8, at.end), 'The dog sat', 'chosen occurrence');
+      });
+
+      test('gives up on a short quote whose context is gone', () => {
+        const index = setup('<p>The cat sat on the mat. The dog sat on the log.</p>');
+        const saved = anchor.fromRange(index, rangeOver('log'));
+        setup('<p>Totally different words, and a log elsewhere entirely</p>');
+        eq(anchor.locate(anchor.buildIndex(fixture), saved), null, 'locate result');
+      });
+
+      test('skips whitespace between list items', () => {
+        setup('<ul>\n<li>One</li>\n<li>Two</li>\n</ul>');
+        const marks = marker.wrapRange(rangeOver('One', 'Two'), 'a', 'blue');
+        eq(marksText('a'), 'OneTwo', 'marked text');
+        eq(marks.every((m) => m.parentElement.tagName === 'LI'), true, 'marks inside <li>');
+      });
+
+      test('keeps whitespace between inline elements', () => {
+        setup('<p><b>foo</b> <i>bar</i></p>');
+        marker.wrapRange(rangeOver('foo', 'bar'), 'a', 'yellow');
+        eq(marksText('a'), 'foo bar', 'marked text');
+      });
+
+      test('never marks text inside a textarea', () => {
+        setup('<p>Before</p><textarea>inside</textarea><p>After</p>');
+        const range = document.createRange();
+        range.setStart(fixture.querySelector('p').firstChild, 0);
+        range.setEnd(fixture.querySelectorAll('p')[1].firstChild, 5);
+        marker.wrapRange(range, 'a', 'yellow');
+        eq(fixture.querySelector('textarea mark'), null, 'mark in textarea');
+        eq(marksText('a'), 'BeforeAfter', 'marked text');
+      });
+
+      test('nested highlights unwrap cleanly in either order', () => {
+        setup(CROSS);
+        const before = fixture.innerHTML;
+        marker.wrapRange(rangeOver('bold', 'link'), 'outer', 'yellow');
+        marker.wrapRange(rangeOver('and'), 'inner', 'pink');
+        eq(marksText('inner'), 'and', 'inner text');
+        marker.unwrap('outer');
+        eq(marksText('inner'), 'and', 'inner survives outer removal');
+        marker.unwrap('inner');
+        eq(fixture.innerHTML, before, 'markup');
+      });
+
+      test('page text is unchanged by marks', () => {
+        const before = setup(CROSS).text;
+        marker.wrapRange(rangeOver('Hello', 'here'), 'a', 'yellow');
+        eq(anchor.buildIndex(fixture).text, before, 'page text');
+      });
+
+      test('page key ignores #hash and utm_* parameters', () => {
+        eq(HL.store.pageKey('https://example.com/a?utm_source=x&id=2#top'), 'hl:https://example.com/a?id=2', 'key');
+        eq(HL.store.pageKey('https://example.com/a?utm_medium=y'), 'hl:https://example.com/a', 'key without query');
+        eq(HL.store.pageKey('https://example.com/a?x'), HL.store.pageKey('https://example.com/a?x='), 'equivalent queries');
+      });
+
+      const failed = results.filter((r) => !r.ok);
+      const summary = failed.length ? `FAIL ${failed.length}/${results.length}` : `PASS ${results.length}/${results.length}`;
+      document.title = summary;
+      document.getElementById('summary').textContent = summary;
+      document.getElementById('results').replaceChildren(
+        ...results.map((r) => {
+          const li = document.createElement('li');
+          li.className = r.ok ? 'pass' : 'fail';
+          li.textContent = r.ok ? r.name : `${r.name} — ${r.error}`;
+          return li;
+        })
+      );
+      window.harnessResults = results;
+    </script>
+  </body>
+</html>

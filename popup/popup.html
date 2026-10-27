@@ -1,0 +1,47 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <title>Highlight</title>
+    <link rel="stylesheet" href="popup.css" />
+  </head>
+  <body>
+    <header>
+      <img src="../icons/icon32.png" alt="" width="20" height="20" />
+      <h1>Highlight</h1>
+      <span id="count" class="muted"></span>
+    </header>
+
+    <section id="unavailable" hidden>
+      <p>Highlighting isn't available on this page.</p>
+      <p class="muted">Chrome doesn't let extensions run on chrome:// pages, the Web Store or the PDF viewer. If you just installed the extension, reload the page.</p>
+    </section>
+
+    <section id="page" hidden>
+      <ul id="list"></ul>
+      <p id="empty" class="muted" hidden>No highlights on this page yet. Select some text to start.</p>
+      <div class="actions">
+        <button id="copy" type="button">Copy as Markdown</button>
+        <button id="clear" type="button" class="danger">Clear page</button>
+      </div>
+    </section>
+
+    <footer>
+      <div class="row">
+        <span>Default color</span>
+        <div id="colors" class="colors" role="radiogroup" aria-label="Default color"></div>
+      </div>
+      <label class="row">
+        <span>Show toolbar when selecting text</span>
+        <input id="showToolbar" type="checkbox" />
+      </label>
+      <div class="row muted">
+        <span>Shortcut: <kbd id="shortcut">not set</kbd></span>
+        <button id="shortcuts" type="button" class="link">Change</button>
+      </div>
+    </footer>
+
+    <script src="../shared/common.js"></script>
+    <script src="popup.js"></script>
+  </body>
+</html>
