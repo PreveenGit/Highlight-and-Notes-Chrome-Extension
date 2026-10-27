@@ -1,0 +1,127 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>The quiet art of reading slowly</title>
+    <style>
+      html { background: #fbfaf7; }
+      body { margin: 0; color: #2b2b2b; font: 19px/1.7 Georgia, 'Times New Roman', serif; }
+      .site { display: flex; align-items: center; gap: 10px; padding: 14px 32px; border-bottom: 1px solid #e7e3da; font: 600 15px system-ui, sans-serif; color: #444; }
+      .site .logo { width: 22px; height: 22px; border-radius: 6px; background: #2f5d50; }
+      .site nav { margin-left: auto; display: flex; gap: 22px; font-weight: 400; color: #777; }
+      article { max-width: 680px; margin: 0 auto; padding: 36px 24px 80px; }
+      .kicker { margin: 0; font: 600 13px system-ui, sans-serif; letter-spacing: 0.08em; text-transform: uppercase; color: #2f5d50; }
+      h1 { margin: 6px 0 6px; font-size: 40px; line-height: 1.15; }
+      .byline { margin: 0 0 26px; font: 14px system-ui, sans-serif; color: #888; }
+      p { margin: 0 0 20px; }
+    </style>
+  </head>
+  <body>
+    <!-- Sample article for the store screenshots (original text). Open with ?stub to run
+         the extension on it; &scene=marks|toolbar|edit sets up what the screenshot shows. -->
+    <header class="site">
+      <span class="logo"></span> Field Notes
+      <nav><span>Essays</span><span>Archive</span><span>About</span></nav>
+    </header>
+    <article>
+      <p class="kicker">Reading</p>
+      <h1>The quiet art of reading slowly</h1>
+      <p class="byline">6 min read</p>
+      <p>
+        Most of what we read online is skimmed, not read. Our eyes slide down the page looking for the next heading,
+        and by the time we close the tab the ideas have already started to fade.
+        Reading is not a race; it is a conversation with someone who is not in the room.
+      </p>
+      <p>
+        Slowing down does not mean reading less. It means choosing a few pieces worth your attention and giving them
+        all of it. When something surprises you, stop and mark the sentence that changed your mind, then keep going.
+        That small act turns a passing thought into something you can find again.
+      </p>
+      <p>
+        For centuries, the margins of a page were where thinking happened. Readers argued with authors in pencil,
+        underlined what mattered and left notes for their future selves. The web took away the margins, but the habit
+        is still worth keeping.
+      </p>
+      <p>
+        Return to your highlights a week later. Most of them will feel obvious, and that is fine. The two or three that
+        still feel sharp are the ideas you actually learned.
+      </p>
+    </article>
+
+    <script src="../../test/load-extension.js"></script>
+    <script>
+      // Highlights to create, in order, and what each scene adds on top.
+      const MARKS = [
+        ['Reading is not a race; it is a conversation with someone who is not in the room.', 'yellow'],
+        ['mark the sentence that changed your mind', 'green'],
+        ['the margins of a page were where thinking happened', 'blue'],
+        ['Return to your highlights a week later.', 'pink']
+      ];
+      const scene = new URLSearchParams(location.search).get('scene');
+      window.__sceneReady = !scene; // test/preview.html waits for this before opening its UI
+
+      document.addEventListener('hl-loaded', async () => {
+        if (!scene) return;
+        const wait = (ms) => new Promise((resolve) => setTimeout(resolve, ms));
+        while (!HL.store.key()) await wait(20); // content script still loading this page's data
+
+        const rangeOf = (phrase) => {
+          const index = HL.anchor.buildIndex();
+          const start = index.text.indexOf(phrase);
+          return HL.anchor.toRange(index, start, start + phrase.length);
+        };
+        const select = (phrase) => {
+          const selection = getSelection();
+          selection.removeAllRanges();
+          selection.addRange(rangeOf(phrase));
+        };
+        const useColor = async (color) => {
+          await HL.setSettings({ defaultColor: color });
+          await wait(50); // let the content script see the settings change
+        };
+
+        await __hlSend({ type: 'clear' });
+        for (const [phrase, color] of MARKS) {
+          await useColor(color);
+          select(phrase);
+          await __hlSend({ type: 'highlight-selection' });
+        }
+        await useColor('yellow');
+
+        // Show the toolbars through the same mouseup handling a real click uses.
+        const showToolbar = () => {
+          if (scene === 'toolbar') {
+            const phrase = 'That small act turns a passing thought into something you can find again.';
+            select(phrase);
+            const rect = rangeOf(phrase).getBoundingClientRect();
+            document.querySelector('article').dispatchEvent(
+              new MouseEvent('mouseup', { bubbles: true, button: 0, clientX: rect.right, clientY: rect.bottom })
+            );
+          } else if (scene === 'edit') {
+            getSelection().removeAllRanges();
+            const mark = document.querySelector('mark.hl-mark[data-hl-color="green"]');
+            const rect = mark.getBoundingClientRect();
+            mark.dispatchEvent(new MouseEvent('mouseup', { bubbles: true, button: 0, clientX: rect.left + 10, clientY: rect.top + 5 }));
+          }
+        };
+        showToolbar();
+        // Headless screenshot capture resizes the window right before taking the shot,
+        // and the toolbar hides on resize (as it should for users). Show it again in
+        // the same handler; a timer would not run before the capture.
+        addEventListener('resize', () => {
+          if (scene === 'toolbar') {
+            const range = getSelection().getRangeAt(0);
+            const rect = Array.from(range.getClientRects()).find((r) => r.width && r.height);
+            HL.toolbar.show(rect, { mode: 'create', color: 'yellow' });
+          } else if (scene === 'edit') {
+            const mark = document.querySelector('mark.hl-mark[data-hl-color="green"]');
+            HL.toolbar.show(mark.getBoundingClientRect(), { mode: 'edit', color: 'green' });
+          }
+        });
+        await wait(100);
+        window.__sceneReady = true;
+      });
+    </script>
+  </body>
+</html>

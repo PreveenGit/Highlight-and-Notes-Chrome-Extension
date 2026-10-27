@@ -4,35 +4,80 @@
     <meta charset="utf-8" />
     <title>Extension preview</title>
     <style>
-      #site { position: fixed; top: 0; right: 0; height: 100vh; border: 0; border-left: 1px solid #ccc; }
+      #site { position: fixed; top: 0; height: 100vh; border: 0; }
     </style>
   </head>
   <body>
-    <!-- Development only. Renders the popup or the library on the left, wired to
-         test-page.html?stub on the right through test/chrome-stub.js:
-           ?ui=popup   the toolbar popup (default)
-           ?ui=panel   the library as it appears in the side panel
-           ?ui=tab     the library as a full tab
-           &seed       first add a few sample pages to storage
-         Reload to re-open the UI. -->
-    <iframe id="site" src="test-page.html?stub"></iframe>
+    <!-- Development only. Renders the popup or the library next to a page running the
+         content scripts through test/chrome-stub.js. Parameters:
+           ui=popup|panel|tab   what to show: the toolbar popup (default), the library in
+                                the side panel, or the library as a full tab
+           page=<path>|none     page beside it (default test-page.html?stub; the page
+                                needs ?stub); "none" shows the UI alone at full width
+           side=right           put the UI on the right, where Chrome's side panel is
+           float                (popup) float over the page at the top right
+           seed[=<json>]        first add sample pages: the built-in set, or a JSON file of
+                                [{ url, title, highlights: [{ id, color, text, daysAgo }] }]
+           view=page|pages|timeline, search=<text>   (library) starting view and search
+         Reload to re-open the UI. store/screenshots/capture.ps1 uses this page. -->
+    <iframe id="site" title="Page"></iframe>
     <script src="chrome-stub.js"></script>
     <script>
+      // Built-in sample pages for &seed (declared first: startup reads them right away).
+      const BUILT_IN_SAMPLES = [
+        {
+          url: 'https://example.org/wildlife/foxes',
+          title: 'Foxes in the city',
+          highlights: [
+            { id: 'seed-fox-1', color: 'yellow', text: 'Urban foxes have learned to cross roads at night when traffic is light.', daysAgo: 2 },
+            { id: 'seed-fox-2', color: 'green', text: 'They often den under sheds and decks.', daysAgo: 2 },
+            { id: 'seed-fox-3', color: 'pink', text: 'Cubs are usually seen in late spring.', daysAgo: 9 }
+          ]
+        },
+        {
+          url: 'https://docs.example.com/browser/side-panels',
+          title: 'Working with side panels',
+          highlights: [
+            { id: 'seed-sp-1', color: 'blue', text: 'A side panel stays open while you move between tabs.', daysAgo: 0.2 },
+            { id: 'seed-sp-2', color: 'yellow', text: 'Keep panels narrow: around 360 pixels is common.', daysAgo: 0.1 }
+          ]
+        },
+        {
+          url: 'https://example.com/notes/reading-list',
+          title: 'My reading list',
+          highlights: [{ id: 'seed-read-1', color: 'orange', text: 'Read more papers, fewer summaries of papers.', daysAgo: 40 }]
+        }
+      ];
+
       (async () => {
         const params = new URLSearchParams(location.search);
         const ui = params.get('ui') || 'popup';
+        const page = params.get('page') || 'test-page.html?stub';
+        const onRight = params.get('side') === 'right';
+        const float = params.has('float');
         const width = { popup: 340, panel: 380, tab: 820 }[ui] || 340;
-        const frame = document.getElementById('site');
-        frame.style.width = `calc(100vw - ${width + 1}px)`;
         window.__hlStubInTab = ui === 'tab';
-        if (params.has('seed')) await seed();
+        if (params.has('seed')) await seed(params.get('seed'));
 
-        // Wait for the content script in the frame to start.
-        await new Promise((resolve) => {
-          const poll = () => (frame.contentWindow.HL && frame.contentWindow.HL.started ? resolve() : setTimeout(poll, 50));
-          poll();
-        });
-        window.__hlTabSend = (msg) => frame.contentWindow.__hlSend(msg);
+        const frame = document.getElementById('site');
+        if (page === 'none') {
+          frame.remove();
+        } else {
+          frame.style.width = float ? '100vw' : `calc(100vw - ${width + 1}px)`;
+          frame.style[onRight ? 'left' : 'right'] = '0';
+          if (!float) frame.style[onRight ? 'borderRight' : 'borderLeft'] = '1px solid #ccc';
+          frame.src = page;
+          // Wait for the page's content script (and any screenshot scene) to finish.
+          await new Promise((resolve) => {
+            const poll = () => {
+              const w = frame.contentWindow;
+              if (w.HL && w.HL.started && w.__sceneReady !== false) resolve();
+              else setTimeout(poll, 50);
+            };
+            poll();
+          });
+          window.__hlTabSend = (msg) => frame.contentWindow.__hlSend(msg);
+        }
 
         const pageUrl = new URL(ui === 'popup' ? '../popup/popup.html' : '../library/library.html', location.href);
         // Cache-buster so edited files are always picked up.
@@ -51,7 +96,24 @@
         const scripts = [...doc.querySelectorAll('script[src]')].map((s) => fresh(s.getAttribute('src')));
         doc.querySelectorAll('script').forEach((s) => s.remove());
         document.body.insertAdjacentHTML('afterbegin', doc.body.innerHTML);
-        if (ui !== 'popup') document.body.style.width = `${width}px`;
+
+        const body = document.body.style;
+        if (float) {
+          Object.assign(body, {
+            position: 'fixed',
+            top: '8px',
+            right: '16px',
+            zIndex: '1',
+            border: '1px solid rgba(0, 0, 0, 0.2)',
+            borderRadius: '8px',
+            boxShadow: '0 8px 28px rgba(0, 0, 0, 0.28)',
+            overflow: 'hidden'
+          });
+        } else if (page !== 'none') {
+          body.width = `${width}px`;
+          if (onRight) body.marginLeft = `calc(100vw - ${width}px)`;
+        }
+
         for (const src of scripts) {
           await new Promise((resolve) => {
             const s = document.createElement('script');
@@ -60,49 +122,41 @@
             document.body.append(s);
           });
         }
+
+        // Library starting state.
+        if (ui !== 'popup') {
+          await new Promise((resolve) => setTimeout(resolve, 300));
+          const view = params.get('view');
+          if (view) document.querySelector(`.views [data-view="${view}"]`).click();
+          const search = params.get('search');
+          if (search) {
+            const input = document.getElementById('search');
+            input.value = search;
+            input.dispatchEvent(new Event('input'));
+          }
+        }
       })();
 
-      // Sample pages so search, sorting and the timeline have something to show.
-      async function seed() {
-        const day = 86400000;
+      // Adds sample pages to storage (skipping pages already there).
+      async function seed(file) {
+        const pages = file ? await (await fetch(file)).json() : BUILT_IN_SAMPLES;
         const now = Date.now();
-        const h = (id, color, text, daysAgo) => ({
-          id,
-          color,
-          text,
-          quote: { exact: text, prefix: '', suffix: '' },
-          position: { start: 0, end: text.length },
-          createdAt: now - daysAgo * day
-        });
-        const pages = [
-          {
-            url: 'https://en.wikipedia.org/wiki/Red_fox',
-            title: 'Red fox - Wikipedia',
-            highlights: [
-              h('seed-fox-1', 'yellow', 'The red fox is the largest of the true foxes.', 2),
-              h('seed-fox-2', 'green', 'It has the widest geographical range of any member of the order Carnivora.', 2),
-              h('seed-fox-3', 'pink', 'Red foxes are usually found in pairs or small groups.', 9)
-            ]
-          },
-          {
-            url: 'https://developer.chrome.com/docs/extensions/reference/api/sidePanel',
-            title: 'chrome.sidePanel | API reference',
-            highlights: [
-              h('seed-sp-1', 'blue', 'Use the chrome.sidePanel API to host content in the browser side panel.', 0.2),
-              h('seed-sp-2', 'yellow', 'The side panel stays open while navigating between tabs.', 0.1)
-            ]
-          },
-          {
-            url: 'https://example.com/notes/reading-list?utm_source=newsletter',
-            title: 'My reading list',
-            highlights: [h('seed-read-1', 'orange', 'Read more papers, fewer summaries of papers.', 40)]
-          }
-        ];
         const items = {};
         for (const page of pages) {
-          const key = 'hl:' + page.url.replace(/\?utm_source=newsletter$/, '');
-          const existing = await chrome.storage.local.get(key);
-          if (!existing[key]) items[key] = page;
+          const key = 'hl:' + page.url; // sample URLs are already in key form (no #hash or utm_*)
+          if ((await chrome.storage.local.get(key))[key]) continue;
+          items[key] = {
+            url: page.url,
+            title: page.title,
+            highlights: page.highlights.map((h, i) => ({
+              id: h.id,
+              color: h.color,
+              text: h.text,
+              quote: { exact: h.text, prefix: '', suffix: '' },
+              position: { start: i * 1000, end: i * 1000 + h.text.length },
+              createdAt: now - h.daysAgo * 86400000
+            }))
+          };
         }
         if (Object.keys(items).length) await chrome.storage.local.set(items);
       }

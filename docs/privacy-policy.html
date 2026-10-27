@@ -1,0 +1,83 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Highlight — Privacy policy</title>
+    <style>
+      :root { color-scheme: light dark; --bg: #fff; --fg: #202124; --muted: #5f6368; --line: #e0e0e0; }
+      @media (prefers-color-scheme: dark) { :root { --bg: #202124; --fg: #e8eaed; --muted: #9aa0a6; --line: #3c4043; } }
+      body { max-width: 720px; margin: 0 auto; padding: 40px 16px 64px; background: var(--bg); color: var(--fg); font: 16px/1.6 system-ui, sans-serif; }
+      h1 { margin-bottom: 4px; font-size: 28px; }
+      h2 { margin-top: 32px; font-size: 19px; }
+      .muted { color: var(--muted); }
+      table { width: 100%; border-collapse: collapse; font-size: 15px; }
+      th, td { padding: 8px 10px; border: 1px solid var(--line); text-align: left; vertical-align: top; }
+      code { font-size: 14px; }
+    </style>
+  </head>
+  <body>
+    <h1>Privacy policy</h1>
+    <p class="muted">Highlight (Chrome extension) · Effective October 27, 2026</p>
+
+    <p>
+      Highlight lets you highlight text on web pages and keeps a library of those highlights. This policy explains what
+      the extension stores and where. In short: <strong>everything stays on your computer.</strong> The extension has no
+      servers, sends nothing over the network, and contains no analytics, ads or tracking.
+    </p>
+
+    <h2>What the extension stores</h2>
+    <p>Only what you create, and only when you create it:</p>
+    <table>
+      <tr><th>Data</th><th>Why</th></tr>
+      <tr><td>The text you highlight, plus up to 32 characters before and after it</td><td>To find the same text and highlight it again when you return to the page</td></tr>
+      <tr><td>The address (URL) and title of each page where you made a highlight</td><td>To know which page a highlight belongs to and to list pages in the library</td></tr>
+      <tr><td>Each highlight's color, position in the page text, and the time you made it</td><td>To show it the way you made it and to sort the library</td></tr>
+      <tr><td>Your settings (default color, whether to show the toolbar)</td><td>To remember your preferences</td></tr>
+    </table>
+    <p>
+      The extension does not record your browsing history, keystrokes, form contents or any page you have not
+      highlighted on. It reads a page's text only on your device, to draw and restore your highlights.
+    </p>
+
+    <h2>Where it is stored</h2>
+    <p>
+      All data is kept in Chrome's local extension storage (<code>chrome.storage.local</code>) on your device. It is not
+      synced to your Google account and is not sent to the developer or to anyone else.
+    </p>
+
+    <h2>Sharing</h2>
+    <p>
+      The extension does not sell, share or transfer your data to anyone, and does not use it for advertising,
+      credit decisions or any purpose other than the highlighting features described above.
+    </p>
+
+    <h2>Export and import</h2>
+    <p>
+      When you choose <em>Export</em>, the extension creates a file (Markdown or JSON) and Chrome saves it where you
+      choose. When you choose <em>Import</em>, it reads the file you pick. What happens to those files afterwards is up
+      to you.
+    </p>
+
+    <h2>Permissions</h2>
+    <ul>
+      <li><strong>Read and change data on the websites you visit</strong> — to draw highlights on pages and restore them when you come back.</li>
+      <li><strong>Storage and unlimited storage</strong> — to keep your highlights and settings on your device, even large libraries.</li>
+      <li><strong>Side panel</strong> — to show your highlight library beside the page.</li>
+      <li><strong>Favicons</strong> — to show each page's icon in the library (Chrome provides these locally).</li>
+    </ul>
+
+    <h2>Deleting your data</h2>
+    <p>
+      Delete single highlights or whole pages from the page, the popup or the library. Uninstalling the extension
+      removes all of its stored data from Chrome.
+    </p>
+
+    <h2>Changes</h2>
+    <p>If this policy changes, the new version will be posted on this page with a new effective date.</p>
+
+    <h2>Contact</h2>
+    <!-- Replace CONTACT_EMAIL with the address people should use before publishing. -->
+    <p>Questions about this policy: <a href="mailto:CONTACT_EMAIL">CONTACT_EMAIL</a></p>
+  </body>
+</html>

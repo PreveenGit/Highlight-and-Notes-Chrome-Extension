@@ -80,26 +80,8 @@
           ? 'You are on page 2 now. This intro text is different, so page 1 highlights here are gone.'
           : 'You are back on page 1. Select text anywhere to highlight it.';
       });
-
-      // ?stub runs the extension's content scripts directly on this page with a fake
-      // chrome.* API, for development without installing the extension.
-      // Don't use ?stub while the real extension is installed: both would run.
-      if (new URLSearchParams(location.search).has('stub')) {
-        const css = document.createElement('link');
-        css.rel = 'stylesheet';
-        css.href = '../content/highlight.css';
-        document.head.append(css);
-        const scripts = ['chrome-stub.js', '../shared/common.js', '../content/anchor.js', '../content/marker.js',
-          '../content/store.js', '../content/toolbar.js', '../content/main.js'];
-        (function next() {
-          const src = scripts.shift();
-          if (!src) return;
-          const s = document.createElement('script');
-          s.src = src;
-          s.onload = next;
-          document.body.append(s);
-        })();
-      }
     </script>
+    <!-- ?stub runs the extension's content scripts on this page without installing it. -->
+    <script src="load-extension.js"></script>
   </body>
 </html>

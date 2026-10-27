@@ -64,8 +64,27 @@ python -m http.server 8000
 
 - `http://localhost:8000/test/harness.html` — automated checks of anchoring, marking and the library's data functions. The page title shows `PASS n/n` or `FAIL k/n`.
 - `http://localhost:8000/test/test-page.html` — a manual test page (formatting, lists, tables, inputs, late-loading text, SPA navigation). Use it with the installed extension.
-- `http://localhost:8000/test/test-page.html?stub` — the same page running the content scripts directly with a fake `chrome.*` API (`test/chrome-stub.js`, storage in `localStorage`), so it works without installing the extension. Don't use `?stub` while the extension is installed, or both copies will run.
-- `http://localhost:8000/test/preview.html?ui=popup|panel|tab` — the popup or the library next to the stubbed test page. Add `&seed` to fill storage with a few sample pages.
+- `http://localhost:8000/test/test-page.html?stub` — the same page running the content scripts directly with a fake `chrome.*` API (`test/chrome-stub.js`, storage in `localStorage`; `test/load-extension.js` loads the scripts listed in `manifest.json`), so it works without installing the extension. Don't use `?stub` while the extension is installed, or both copies will run.
+- `http://localhost:8000/test/preview.html?ui=popup|panel|tab` — the popup or the library next to the stubbed test page. Add `&seed` to fill storage with a few sample pages. The comment at the top of `preview.html` lists the other options (another page, panel on the right, starting view and search).
+
+## Publishing
+
+Everything for the Chrome Web Store is in `store/` and `docs/`:
+
+| File | Use |
+| --- | --- |
+| `store/listing.md` | Copy-ready text for every dashboard field (description, privacy practices, permission justifications) and a pre-submit checklist |
+| `store/package.ps1` | Builds `dist/highlight-<version>.zip` with only the extension files; checks that every file `manifest.json` references is included |
+| `store/screenshots/*.png` | Five 1280×800 store screenshots |
+| `store/screenshots/capture.ps1` | Re-captures the screenshots with headless Chrome (needs the test server running) |
+| `store/make-icons.ps1` | Redraws `icons/` (the 128 px icon has the store's 16 px padding) |
+| `docs/privacy-policy.html` | Privacy policy to host and link from the listing (replace `CONTACT_EMAIL` first) |
+
+To build the upload, in PowerShell from the project folder:
+
+```powershell
+.\store\package.ps1
+```
 
 ## Not yet
 
