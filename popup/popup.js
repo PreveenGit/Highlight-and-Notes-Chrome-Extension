@@ -75,10 +75,18 @@
   }
 
   $('copy').addEventListener('click', async () => {
-    const lines = [`## [${page.title || page.url}](${page.url})`, ''];
-    for (const h of page.highlights) lines.push(`> ${h.text.replace(/\s*\n\s*/g, ' ')}`, '');
-    await navigator.clipboard.writeText(lines.join('\n').trim() + '\n');
+    await navigator.clipboard.writeText(HL.data.toMarkdown([{ ...page, title: page.title || page.url }]));
     flashLabel($('copy'), 'Copied!');
+  });
+
+  $('sidePanel').addEventListener('click', async () => {
+    await chrome.sidePanel.open({ windowId: tab.windowId });
+    window.close();
+  });
+
+  $('library').addEventListener('click', () => {
+    chrome.tabs.create({ url: chrome.runtime.getURL('library/library.html') });
+    window.close();
   });
 
   // Two clicks to clear, so one stray click can't wipe a page.

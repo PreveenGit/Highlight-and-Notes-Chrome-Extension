@@ -1,0 +1,27 @@
+/* Color tokens shared by the popup and the library. */
+:root {
+  color-scheme: light dark;
+  --bg: #ffffff;
+  --surface: #f8f9fa;
+  --fg: #202124;
+  --muted: #5f6368;
+  --line: #e0e0e0;
+  --hover: #f1f3f4;
+  --accent: #1a73e8;
+  --danger: #d93025;
+  --hit: #fde293;
+}
+
+@media (prefers-color-scheme: dark) {
+  :root {
+    --bg: #202124;
+    --surface: #292a2d;
+    --fg: #e8eaed;
+    --muted: #9aa0a6;
+    --line: #3c4043;
+    --hover: #2d2e31;
+    --accent: #8ab4f8;
+    --danger: #f28b82;
+    --hit: #5c4d0f;
+  }
+}

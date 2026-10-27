@@ -2,7 +2,7 @@
 <html lang="en">
   <head>
     <meta charset="utf-8" />
-    <title>Anchor harness</title>
+    <title>Test harness</title>
     <style>
       body { font: 14px/1.5 system-ui, sans-serif; margin: 24px; }
       .pass { color: #188038; }
@@ -18,7 +18,7 @@
     <script src="../shared/common.js"></script>
     <script src="../content/anchor.js"></script>
     <script src="../content/marker.js"></script>
-    <script src="../content/store.js"></script>
+    <script src="../library/data.js"></script>
     <script>
       const fixture = document.getElementById('fixture');
       const { anchor, marker } = HL;
@@ -173,9 +173,134 @@
       });
 
       test('page key ignores #hash and utm_* parameters', () => {
-        eq(HL.store.pageKey('https://example.com/a?utm_source=x&id=2#top'), 'hl:https://example.com/a?id=2', 'key');
-        eq(HL.store.pageKey('https://example.com/a?utm_medium=y'), 'hl:https://example.com/a', 'key without query');
-        eq(HL.store.pageKey('https://example.com/a?x'), HL.store.pageKey('https://example.com/a?x='), 'equivalent queries');
+        eq(HL.pageKey('https://example.com/a?utm_source=x&id=2#top'), 'hl:https://example.com/a?id=2', 'key');
+        eq(HL.pageKey('https://example.com/a?utm_medium=y'), 'hl:https://example.com/a', 'key without query');
+        eq(HL.pageKey('https://example.com/a?x'), HL.pageKey('https://example.com/a?x='), 'equivalent queries');
+      });
+
+      // ---- Library data (library/data.js, shared/common.js) ----
+
+      const DAY = 86400000;
+      const hl = (id, color, text, createdAt, start = 0) => ({
+        id,
+        color,
+        text,
+        quote: { exact: text, prefix: '', suffix: '' },
+        position: { start, end: start + text.length },
+        createdAt
+      });
+      const STORAGE = {
+        settings: { defaultColor: 'blue' },
+        'hl:https://en.wikipedia.org/wiki/Fox': {
+          url: 'https://en.wikipedia.org/wiki/Fox',
+          title: 'Fox - Wikipedia',
+          highlights: [hl('f2', 'green', 'Foxes live on every continent', 3 * DAY, 50), hl('f1', 'yellow', 'The quick brown fox', 1 * DAY, 10)]
+        },
+        'hl:https://www.example.com/dogs': {
+          url: 'https://www.example.com/dogs',
+          title: 'All about dogs',
+          highlights: [hl('d1', 'pink', 'The lazy dog sleeps', 5 * DAY), hl('d2', 'yellow', 'Dogs and foxes are related', 6 * DAY, 20), hl('d3', 'blue', 'Bark', 7 * DAY, 40)]
+        },
+        'hl:https://empty.example/': { url: 'https://empty.example/', title: 'Empty', highlights: [] }
+      };
+      const ids = (list) => list.map((x) => x.id).join(',');
+
+      test('toPages keeps only pages with highlights', () => {
+        const pages = HL.data.toPages(STORAGE);
+        eq(pages.length, 2, 'page count');
+        const dogs = pages.find((p) => p.title === 'All about dogs');
+        eq(dogs.site, 'example.com', 'site without www');
+        eq(dogs.lastAt, 7 * DAY, 'lastAt');
+        eq(dogs.firstAt, 5 * DAY, 'firstAt');
+      });
+
+      test('search needs every word, in the highlight text or page title/URL', () => {
+        const pages = HL.data.toPages(STORAGE);
+        eq(HL.data.filterAndSort(pages, { query: 'fox' }).count, 3, '"fox" matches');
+        eq(ids(HL.data.filterAndSort(pages, { query: 'wikipedia quick' }).timeline.map((t) => t.highlight)), 'f1', 'title + text');
+        eq(HL.data.filterAndSort(pages, { query: 'DOG Lazy' }).count, 1, 'case-insensitive AND');
+        eq(HL.data.filterAndSort(pages, { query: 'zebra' }).count, 0, 'no match');
+      });
+
+      test('color filter keeps only the chosen colors', () => {
+        const pages = HL.data.toPages(STORAGE);
+        const result = HL.data.filterAndSort(pages, { colors: ['yellow', 'blue'] });
+        eq(ids(result.timeline.map((t) => t.highlight)), 'd3,d2,f1', 'yellow and blue, newest first');
+      });
+
+      test('sorts pages and orders highlights within a page', () => {
+        const pages = HL.data.toPages(STORAGE);
+        const titles = (sort) => HL.data.filterAndSort(pages, { sort }).pages.map((p) => p.title).join(' | ');
+        eq(titles('newest'), 'All about dogs | Fox - Wikipedia', 'newest (larger createdAt first)');
+        eq(titles('oldest'), 'Fox - Wikipedia | All about dogs', 'oldest');
+        eq(titles('site'), 'Fox - Wikipedia | All about dogs', 'site A-Z (en.wikipedia.org < example.com)');
+        eq(titles('most'), 'All about dogs | Fox - Wikipedia', 'most highlights');
+        const fox = HL.data.filterAndSort(pages, {}).pages.find((p) => p.title.startsWith('Fox'));
+        eq(ids(fox.highlights), 'f1,f2', 'page order by position');
+        eq(ids(HL.data.filterAndSort(pages, { sort: 'oldest' }).timeline.map((t) => t.highlight)), 'f1,f2,d1,d2,d3', 'timeline oldest');
+      });
+
+      test('Markdown export groups quotes under page links', () => {
+        const md = HL.data.toMarkdown([
+          { title: 'A [draft] page', url: 'https://x.test/a b', highlights: [{ text: 'one\n  two' }, { text: 'three' }] }
+        ]);
+        eq(md, '## [A \\[draft\\] page](https://x.test/a%20b)\n\n> one two\n\n> three\n', 'markdown');
+      });
+
+      test('backup round trip keeps every highlight', () => {
+        const pages = HL.data.toPages(STORAGE);
+        const back = HL.data.parseBackup(JSON.stringify(HL.data.toBackup(pages)));
+        eq(back.length, 2, 'pages');
+        eq(back.map((p) => p.key).sort().join(' '), pages.map((p) => p.key).sort().join(' '), 'keys');
+        eq(ids(back.flatMap((p) => p.highlights)), ids(pages.flatMap((p) => p.highlights)), 'highlight ids');
+      });
+
+      test('backup import rejects bad files and cleans bad entries', () => {
+        const fails = (text) => {
+          try {
+            HL.data.parseBackup(text);
+            return false;
+          } catch {
+            return true;
+          }
+        };
+        eq(fails('not json'), true, 'invalid JSON');
+        eq(fails('{"pages": []}'), true, 'missing format tag');
+        eq(fails('{"format": "highlight-backup", "version": 99, "pages": []}'), true, 'newer version');
+        const pages = HL.data.parseBackup(
+          JSON.stringify({
+            format: 'highlight-backup',
+            version: 1,
+            pages: [
+              { url: 'https://a.test/?utm_source=x', title: 'A', highlights: [{ id: 'ok', color: 'purple', quote: { exact: 'hi' } }, { id: 'bad' }] },
+              { url: 'not a url', highlights: [{ id: 'x', quote: { exact: 'x' } }] }
+            ]
+          })
+        );
+        eq(pages.length, 1, 'pages kept');
+        eq(pages[0].key, 'hl:https://a.test/', 'key recomputed');
+        eq(ids(pages[0].highlights), 'ok', 'valid highlights');
+        eq(pages[0].highlights[0].color, 'yellow', 'unknown color');
+        eq(pages[0].highlights[0].text, 'hi', 'text falls back to quote');
+      });
+
+      test('merging keeps existing highlights and skips duplicates', () => {
+        const existing = [hl('a', 'pink', 'A', 1), hl('b', 'blue', 'B', 2)];
+        const incoming = [hl('b', 'yellow', 'B', 2), hl('c', 'green', 'C', 3), hl('c', 'green', 'C', 3)];
+        const result = HL.data.mergeHighlights(existing, incoming);
+        eq(ids(result.list), 'a,b,c', 'merged ids');
+        eq(result.list[1].color, 'blue', 'existing entry wins');
+        eq(result.added, 1, 'added');
+        eq(result.skipped, 2, 'skipped');
+      });
+
+      test('diffHighlights finds added, removed and recolored', () => {
+        const before = [hl('a', 'pink', 'A', 1), hl('b', 'blue', 'B', 2), hl('c', 'green', 'C', 3)];
+        const after = [hl('a', 'pink', 'A', 1), hl('b', 'orange', 'B', 2), hl('d', 'yellow', 'D', 4)];
+        const diff = HL.diffHighlights(before, after);
+        eq(ids(diff.added), 'd', 'added');
+        eq(ids(diff.removed), 'c', 'removed');
+        eq(ids(diff.recolored), 'b', 'recolored');
       });
 
       const failed = results.filter((r) => !r.ok);

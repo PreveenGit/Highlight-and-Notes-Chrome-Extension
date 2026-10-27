@@ -30,6 +30,41 @@
     CLEAR: 'clear'
   };
 
+  // Same page => same key: drop the #hash and utm_* tracking parameters, and
+  // re-serialize the query so equivalent spellings ("?a" / "?a=") match.
+  HL.pageKey = function pageKey(href) {
+    const url = new URL(href);
+    url.hash = '';
+    const params = new URLSearchParams(url.search);
+    for (const name of [...params.keys()]) {
+      if (name.startsWith('utm_')) params.delete(name);
+    }
+    url.search = params.toString();
+    return HL.PAGE_KEY_PREFIX + url.href;
+  };
+
+  // Read-modify-write of one page's highlights. `change` gets the stored list and
+  // returns the new one. `meta` ({ url, title }) is merged into the page record;
+  // without it the stored url/title are kept. An empty list removes the page.
+  HL.mutatePage = async function mutatePage(key, change, meta) {
+    const stored = (await chrome.storage.local.get(key))[key];
+    const next = change(stored ? stored.highlights : []);
+    if (next.length) await chrome.storage.local.set({ [key]: { ...stored, ...meta, highlights: next } });
+    else await chrome.storage.local.remove(key);
+    return next;
+  };
+
+  // What changed between two versions of a page's highlight list.
+  HL.diffHighlights = function diffHighlights(oldList, newList) {
+    const before = new Map(oldList.map((h) => [h.id, h]));
+    const after = new Set(newList.map((h) => h.id));
+    return {
+      added: newList.filter((h) => !before.has(h.id)),
+      removed: oldList.filter((h) => !after.has(h.id)),
+      recolored: newList.filter((h) => before.has(h.id) && before.get(h.id).color !== h.color)
+    };
+  };
+
   HL.getSettings = async function getSettings() {
     const data = await chrome.storage.local.get(HL.SETTINGS_KEY);
     return { ...HL.DEFAULT_SETTINGS, ...data[HL.SETTINGS_KEY] };

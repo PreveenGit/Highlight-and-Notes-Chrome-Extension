@@ -21,6 +21,7 @@
 
   async function init() {
     HL.toolbar.init(onToolbarAction);
+    HL.store.onExternalChange(applyExternalChange);
     bindEvents();
     settings = await HL.getSettings();
     await loadPage();
@@ -82,7 +83,7 @@
 
   async function onUrlChange() {
     currentHref = location.href;
-    if (HL.store.pageKey(location.href) === HL.store.key()) return; // only the #hash changed
+    if (HL.pageKey(location.href) === HL.store.key()) return; // only the #hash changed
     HL.toolbar.hide();
     HL.marker.unwrapAll();
     await loadPage();
@@ -132,6 +133,22 @@
   function recolor(id, color) {
     HL.store.update(id, { color });
     HL.marker.recolor(id, color);
+  }
+
+  // Highlights changed outside this tab (the library, the popup in another tab,
+  // an import, or the same page open twice).
+  function applyExternalChange({ added, removed, recolored }) {
+    for (const h of removed) {
+      unresolved.delete(h.id);
+      HL.marker.unwrap(h.id);
+      if (h.id === activeId) HL.toolbar.hide();
+    }
+    for (const h of recolored) HL.marker.recolor(h.id, h.color);
+    if (added.length) {
+      added.forEach((h) => unresolved.add(h.id));
+      fastUntil = Date.now() + FAST_RETRY_MS;
+      restorePending();
+    }
   }
 
   function rememberColor(color) {
@@ -296,6 +313,6 @@
       if (a.mark || b.mark) return a.mark ? -1 : 1;
       return a.h.createdAt - b.h.createdAt;
     });
-    return items.map(({ h, mark }) => ({ id: h.id, color: h.color, text: h.text, found: !!mark }));
+    return items.map(({ h, mark }) => ({ id: h.id, color: h.color, text: h.text, createdAt: h.createdAt, found: !!mark }));
   }
 })();

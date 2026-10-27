@@ -1,26 +1,4 @@
-:root {
-  color-scheme: light dark;
-  --bg: #ffffff;
-  --fg: #202124;
-  --muted: #5f6368;
-  --line: #e0e0e0;
-  --hover: #f1f3f4;
-  --accent: #1a73e8;
-  --danger: #d93025;
-}
-
-@media (prefers-color-scheme: dark) {
-  :root {
-    --bg: #202124;
-    --fg: #e8eaed;
-    --muted: #9aa0a6;
-    --line: #3c4043;
-    --hover: #2d2e31;
-    --accent: #8ab4f8;
-    --danger: #f28b82;
-  }
-}
-
+/* Color tokens come from shared/theme.css. */
 * {
   box-sizing: border-box;
 }
@@ -49,6 +27,30 @@ h1 {
 
 #count {
   margin-left: auto;
+}
+
+.icon-btn {
+  display: grid;
+  place-items: center;
+  width: 26px;
+  height: 26px;
+  padding: 0;
+  border: 0;
+  border-radius: 6px;
+  background: none;
+  color: var(--muted);
+  cursor: pointer;
+}
+
+.icon-btn:hover {
+  background: var(--hover);
+  color: var(--fg);
+}
+
+.icon-btn svg {
+  width: 17px;
+  height: 17px;
+  fill: currentColor;
 }
 
 .muted {

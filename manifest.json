@@ -1,11 +1,14 @@
 {
   "manifest_version": 3,
   "name": "Highlight",
-  "version": "1.0.0",
+  "version": "1.1.0",
   "description": "Highlight words and sentences on any web page. Highlights are saved per page and restored when you come back.",
-  "permissions": ["storage"],
+  "permissions": ["storage", "unlimitedStorage", "sidePanel", "favicon"],
   "background": {
     "service_worker": "background.js"
+  },
+  "side_panel": {
+    "default_path": "library/library.html"
   },
   "action": {
     "default_title": "Highlight",
@@ -44,6 +47,12 @@
         "default": "Alt+Shift+H"
       },
       "description": "Highlight the selected text"
+    },
+    "open-side-panel": {
+      "suggested_key": {
+        "default": "Alt+Shift+L"
+      },
+      "description": "Open the highlight library in the side panel"
     }
   }
 }

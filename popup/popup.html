@@ -3,6 +3,7 @@
   <head>
     <meta charset="utf-8" />
     <title>Highlight</title>
+    <link rel="stylesheet" href="../shared/theme.css" />
     <link rel="stylesheet" href="popup.css" />
   </head>
   <body>
@@ -10,6 +11,12 @@
       <img src="../icons/icon32.png" alt="" width="20" height="20" />
       <h1>Highlight</h1>
       <span id="count" class="muted"></span>
+      <button id="sidePanel" type="button" class="icon-btn" title="All highlights in the side panel" aria-label="All highlights in the side panel">
+        <svg viewBox="0 0 24 24"><path d="M19 3H5a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2V5a2 2 0 0 0-2-2zm0 16h-5V5h5v14z" /></svg>
+      </button>
+      <button id="library" type="button" class="icon-btn" title="All highlights in a tab" aria-label="All highlights in a tab">
+        <svg viewBox="0 0 24 24"><path d="M19 19H5V5h7V3H5a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14c1.1 0 2-.9 2-2v-7h-2v7zM14 3v2h3.59l-9.83 9.83 1.41 1.41L19 6.41V10h2V3h-7z" /></svg>
+      </button>
     </header>
 
     <section id="unavailable" hidden>
@@ -42,6 +49,7 @@
     </footer>
 
     <script src="../shared/common.js"></script>
+    <script src="../library/data.js"></script>
     <script src="popup.js"></script>
   </body>
 </html>

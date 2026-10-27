@@ -17,6 +17,14 @@
   const keysOf = (keys) => (keys == null ? allKeys() : Array.isArray(keys) ? keys : typeof keys === 'string' ? [keys] : Object.keys(keys));
   const fire = (changes) => setTimeout(() => changedListeners.forEach((fn) => fn(changes, 'local')));
 
+  // Other windows/frames of this origin (e.g. the library beside the test page) get
+  // the browser's "storage" event; turn it into onChanged like real Chrome would.
+  window.addEventListener('storage', (e) => {
+    if (!e.key || !e.key.startsWith(PREFIX)) return;
+    const parse = (raw) => (raw === null ? undefined : JSON.parse(raw));
+    fire({ [e.key.slice(PREFIX.length)]: { oldValue: parse(e.oldValue), newValue: parse(e.newValue) } });
+  });
+
   const local = {
     async get(keys) {
       const out = {};
@@ -58,6 +66,9 @@
     });
   }
 
+  const noEvent = { addListener() {} };
+  const extensionRoot = new URL('../', document.currentScript.src);
+
   const chrome = (globalThis.chrome = globalThis.chrome || {});
   chrome.storage = {
     local,
@@ -65,16 +76,30 @@
   };
   chrome.runtime = {
     ...(chrome.runtime || {}),
-    onMessage: { addListener: (fn) => messageListeners.push(fn) }
+    onMessage: { addListener: (fn) => messageListeners.push(fn) },
+    getURL: (path) => new URL(path.replace(/^\//, ''), extensionRoot).href
   };
   chrome.tabs = {
-    query: async () => [{ id: 1 }],
-    // The popup preview overrides this to reach a page in an iframe.
+    query: async () => [{ id: 1, windowId: 1 }],
+    // test/preview.html sets __hlTabSend to reach the test page in its iframe.
     sendMessage: (_tabId, msg) => (window.__hlTabSend ? window.__hlTabSend(msg) : deliver(msg)),
-    create: async ({ url }) => console.log('[chrome-stub] tabs.create', url)
+    create: async ({ url }) => {
+      console.log('[chrome-stub] tabs.create', url);
+      return { id: 2, windowId: 1 };
+    },
+    // undefined means "not in a tab", i.e. the side panel or popup.
+    getCurrent: async () => (window.__hlStubInTab ? { id: 3, windowId: 1 } : undefined),
+    onActivated: noEvent,
+    onUpdated: noEvent
+  };
+  chrome.sidePanel = {
+    open: async (options) => console.log('[chrome-stub] sidePanel.open', options)
   };
   chrome.commands = {
-    getAll: async () => [{ name: 'highlight-selection', shortcut: 'Alt+Shift+H' }]
+    getAll: async () => [
+      { name: 'highlight-selection', shortcut: 'Alt+Shift+H' },
+      { name: 'open-side-panel', shortcut: 'Alt+Shift+L' }
+    ]
   };
 
   // For driving the content script from tests or the console.
