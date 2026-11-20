@@ -1,2 +1,5 @@
 # Built store uploads (store/package.ps1)
 dist/
+
+# Private key for the extension ID (store/extension-key.pem). Never commit or share it.
+*.pem

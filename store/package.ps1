@@ -10,7 +10,15 @@ Add-Type -AssemblyName System.IO.Compression, System.IO.Compression.FileSystem
 
 $root = Split-Path $PSScriptRoot -Parent
 $include = @('manifest.json', 'background.js', 'shared', 'content', 'popup', 'library', 'icons')
-$manifest = Get-Content (Join-Path $root 'manifest.json') -Raw | ConvertFrom-Json
+$manifestText = [System.IO.File]::ReadAllText((Join-Path $root 'manifest.json'))
+$manifest = $manifestText | ConvertFrom-Json
+
+# "key" only pins the ID of the unpacked copy loaded from this folder. The Web Store
+# gives the item its own ID, so the uploaded manifest leaves the key out.
+$storeManifest = $manifestText -replace '(?m)^[ \t]*"key"[ \t]*:[ \t]*"[^"]*",[ \t]*\r?\n', ''
+if (($storeManifest | ConvertFrom-Json).PSObject.Properties.Name -contains 'key') {
+  throw 'Could not remove "key" from manifest.json for the store upload.'
+}
 
 # Collect files as zip entry names ("content/main.js").
 $entries = [ordered]@{}
@@ -39,7 +47,13 @@ $stream = [System.IO.File]::Open($zipPath, [System.IO.FileMode]::CreateNew)
 $zip = New-Object System.IO.Compression.ZipArchive($stream, [System.IO.Compression.ZipArchiveMode]::Create)
 try {
   foreach ($name in $entries.Keys) {
-    [System.IO.Compression.ZipFileExtensions]::CreateEntryFromFile($zip, $entries[$name], $name, [System.IO.Compression.CompressionLevel]::Optimal) | Out-Null
+    if ($name -eq 'manifest.json') {
+      $entry = $zip.CreateEntry($name, [System.IO.Compression.CompressionLevel]::Optimal)
+      $writer = New-Object System.IO.StreamWriter($entry.Open(), (New-Object System.Text.UTF8Encoding($false)))
+      try { $writer.Write($storeManifest) } finally { $writer.Dispose() }
+    } else {
+      [System.IO.Compression.ZipFileExtensions]::CreateEntryFromFile($zip, $entries[$name], $name, [System.IO.Compression.CompressionLevel]::Optimal) | Out-Null
+    }
   }
 } finally {
   $zip.Dispose()
