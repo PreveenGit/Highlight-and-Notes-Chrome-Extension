@@ -17,7 +17,7 @@
            side=right           put the UI on the right, where Chrome's side panel is
            float                (popup) float over the page at the top right
            seed[=<json>]        first add sample pages: the built-in set, or a JSON file of
-                                [{ url, title, highlights: [{ id, color, text, daysAgo }] }]
+                                [{ url, title, highlights: [{ id, color, text, daysAgo, note? }] }]
            view=page|pages|timeline, search=<text>   (library) starting view and search
          Reload to re-open the UI. store/screenshots/capture.ps1 uses this page. -->
     <iframe id="site" title="Page"></iframe>
@@ -154,7 +154,8 @@
               text: h.text,
               quote: { exact: h.text, prefix: '', suffix: '' },
               position: { start: i * 1000, end: i * 1000 + h.text.length },
-              createdAt: now - h.daysAgo * 86400000
+              createdAt: now - h.daysAgo * 86400000,
+              ...(h.note ? { note: h.note } : {})
             }))
           };
         }

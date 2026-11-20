@@ -44,7 +44,7 @@
   };
 
   // Applies search and color filters, then sorts.
-  //   query:  every word must appear in the highlight text, page title or URL
+  //   query:  every word must appear in the highlight text, its note, page title or URL
   //   colors: color names to keep (empty = all)
   //   sort:   newest | oldest | site | most
   // Returns { pages, timeline, count }. Pages keep only their matching highlights,
@@ -55,11 +55,11 @@
     const out = [];
     for (const page of pages) {
       const pageText = `${page.title}\n${page.url}`.toLowerCase();
-      const highlights = page.highlights.filter(
-        (h) =>
-          (!colorSet.size || colorSet.has(h.color)) &&
-          terms.every((t) => pageText.includes(t) || String(h.text || '').toLowerCase().includes(t))
-      );
+      const highlights = page.highlights.filter((h) => {
+        if (colorSet.size && !colorSet.has(h.color)) return false;
+        const own = `${h.text || ''}\n${HL.noteOf(h)}`.toLowerCase();
+        return terms.every((t) => pageText.includes(t) || own.includes(t));
+      });
       if (highlights.length) out.push({ ...page, highlights: inPageOrder(highlights) });
     }
     out.sort(PAGE_SORTS[sort] || PAGE_SORTS.newest);
@@ -82,12 +82,18 @@
     return [...highlights].sort((a, b) => start(a) - start(b));
   }
 
-  // Pages -> Markdown, one section per page with each highlight as a quote.
+  // Pages -> Markdown, one section per page with each highlight as a quote and
+  // its note, if any, as a paragraph after it.
   function toMarkdown(pages) {
     const lines = [];
     for (const page of pages) {
       lines.push(`## [${page.title.replace(/[[\]]/g, '\\$&')}](${page.url.replace(/[ ()]/g, encodeURIComponent)})`, '');
-      for (const h of page.highlights) lines.push(`> ${String(h.text).replace(/\s+/g, ' ').trim()}`, '');
+      for (const h of page.highlights) {
+        lines.push(`> ${String(h.text).replace(/\s+/g, ' ').trim()}`, '');
+        const note = HL.noteOf(h);
+        // Two trailing spaces keep the note's own line breaks in rendered Markdown.
+        if (note) lines.push(`**Note:** ${note.split(/\r?\n/).map((l) => l.trimEnd()).join('  \n')}`, '');
+      }
     }
     return lines.join('\n').trim() + '\n';
   }
@@ -142,14 +148,17 @@
       h.position && Number.isFinite(h.position.start) && Number.isFinite(h.position.end)
         ? { start: h.position.start, end: h.position.end }
         : undefined;
-    return {
-      id: h.id,
-      color: HL.COLORS[h.color] ? h.color : 'yellow',
-      text: str(h.text) || h.quote.exact,
-      quote: { exact: h.quote.exact, prefix: str(h.quote.prefix), suffix: str(h.quote.suffix) },
-      position,
-      createdAt: Number.isFinite(h.createdAt) ? h.createdAt : Date.now()
-    };
+    return HL.withNote(
+      {
+        id: h.id,
+        color: HL.COLORS[h.color] ? h.color : 'yellow',
+        text: str(h.text) || h.quote.exact,
+        quote: { exact: h.quote.exact, prefix: str(h.quote.prefix), suffix: str(h.quote.suffix) },
+        position,
+        createdAt: Number.isFinite(h.createdAt) ? h.createdAt : Date.now()
+      },
+      h.note
+    );
   }
 
   // Adds `incoming` highlights to `list`, skipping ids already there (existing ones win).

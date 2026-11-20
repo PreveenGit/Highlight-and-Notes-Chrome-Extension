@@ -55,6 +55,16 @@
           text.prepend(note);
         }
 
+        const body = document.createElement('div');
+        body.className = 'body';
+        body.append(text);
+        if (h.note) {
+          const userNote = document.createElement('span');
+          userNote.className = 'user-note';
+          userNote.textContent = h.note;
+          body.append(userNote);
+        }
+
         const remove = document.createElement('button');
         remove.type = 'button';
         remove.className = 'remove';
@@ -68,7 +78,7 @@
         });
 
         if (h.found) li.addEventListener('click', () => send({ type: HL.MSG.SCROLL_TO, id: h.id }));
-        li.append(dot, text, remove);
+        li.append(dot, body, remove);
         return li;
       })
     );

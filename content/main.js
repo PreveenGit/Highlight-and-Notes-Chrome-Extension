@@ -51,7 +51,10 @@
     // re-index before each one.
     for (const { h, at } of found) {
       const range = HL.anchor.toRange(HL.anchor.buildIndex(), at.start, at.end);
-      if (range && HL.marker.wrapRange(range, h.id, h.color).length) unresolved.delete(h.id);
+      if (range && HL.marker.wrapRange(range, h.id, h.color).length) {
+        unresolved.delete(h.id);
+        HL.marker.setNote(h.id, h.note);
+      }
     }
   }
 
@@ -95,11 +98,12 @@
     return 'h' + Date.now().toString(36) + Math.random().toString(36).slice(2, 8);
   }
 
+  // Returns the new highlight's id, or null if nothing could be highlighted.
   function highlightRange(range, color) {
-    if (!range || range.collapsed) return false;
+    if (!range || range.collapsed) return null;
     const index = HL.anchor.buildIndex();
     const anchor = HL.anchor.fromRange(index, range);
-    if (!anchor) return false;
+    if (!anchor) return null;
     // Wrap the trimmed text we are about to save, not the raw selection.
     const target = HL.anchor.toRange(index, anchor.position.start, anchor.position.end);
     // Display text for the popup and copying. The selection's text keeps the breaks the
@@ -107,15 +111,15 @@
     const sel = window.getSelection();
     const text = (sel.isCollapsed ? anchor.quote.exact : sel.toString()).replace(/\s+/g, ' ').trim();
     const id = newId();
-    if (!target || !HL.marker.wrapRange(target, id, color).length) return false;
+    if (!target || !HL.marker.wrapRange(target, id, color).length) return null;
     sel.removeAllRanges();
     HL.store.add({ id, color, text: text || anchor.quote.exact, ...anchor, createdAt: Date.now() });
-    return true;
+    return id;
   }
 
   function highlightSelection(color) {
     const range = selectedRange();
-    return range ? highlightRange(range, color) : false;
+    return range ? highlightRange(range, color) : null;
   }
 
   function removeHighlight(id) {
@@ -135,15 +139,40 @@
     HL.marker.recolor(id, color);
   }
 
+  function saveNote(id, note) {
+    const saved = HL.store.get(id);
+    if (!saved || HL.noteOf(saved) === String(note || '').trim()) return;
+    HL.store.setNote(id, note);
+    HL.marker.setNote(id, note);
+  }
+
+  // Opens the note editor on the clicked highlight, or first highlights the
+  // selection (in the default color) when the toolbar was shown for one.
+  function openNoteEditor() {
+    if (!activeId) {
+      activeId = highlightRange(pendingRange, settings.defaultColor);
+      pendingRange = null;
+    }
+    const marks = activeId ? HL.marker.getMarks(activeId) : [];
+    if (!marks.length) {
+      activeId = null;
+      HL.toolbar.hide();
+      return;
+    }
+    const rect = Array.from(marks[0].getClientRects()).find((r) => r.width && r.height) || marks[0].getBoundingClientRect();
+    HL.toolbar.showNote(rect, { text: HL.noteOf(HL.store.get(activeId)) });
+  }
+
   // Highlights changed outside this tab (the library, the popup in another tab,
   // an import, or the same page open twice).
-  function applyExternalChange({ added, removed, recolored }) {
+  function applyExternalChange({ added, removed, recolored, noted }) {
     for (const h of removed) {
       unresolved.delete(h.id);
       HL.marker.unwrap(h.id);
       if (h.id === activeId) HL.toolbar.hide();
     }
     for (const h of recolored) HL.marker.recolor(h.id, h.color);
+    for (const h of noted) HL.marker.setNote(h.id, h.note);
     if (added.length) {
       added.forEach((h) => unresolved.add(h.id));
       fastUntil = Date.now() + FAST_RETRY_MS;
@@ -158,11 +187,18 @@
     }
   }
 
-  function onToolbarAction(action, color) {
+  // `value` is the color for "color" and the typed text for "note-save".
+  function onToolbarAction(action, value) {
+    if (action === 'note') {
+      openNoteEditor(); // keeps activeId for the editor's Save
+      return;
+    }
     if (action === 'color') {
-      if (activeId) recolor(activeId, color);
-      else highlightRange(pendingRange, color);
-      rememberColor(color);
+      if (activeId) recolor(activeId, value);
+      else highlightRange(pendingRange, value);
+      rememberColor(value);
+    } else if (action === 'note-save' && activeId) {
+      saveNote(activeId, value);
     } else if (action === 'copy' && activeId) {
       const saved = HL.store.get(activeId);
       copyText(saved ? saved.text : HL.marker.getMarks(activeId).map((m) => m.textContent).join(''));
@@ -219,7 +255,8 @@
   function showEditToolbar(mark) {
     activeId = mark.dataset.hlId;
     pendingRange = null;
-    HL.toolbar.show(mark.getBoundingClientRect(), { mode: 'edit', color: mark.dataset.hlColor });
+    const hasNote = !!HL.noteOf(HL.store.get(activeId));
+    HL.toolbar.show(mark.getBoundingClientRect(), { mode: 'edit', color: mark.dataset.hlColor, hasNote });
   }
 
   function pointRect({ x, y }) {
@@ -238,6 +275,7 @@
   }
 
   function onKeyUp(e) {
+    if (HL.toolbar.owns(e)) return; // typing in the note editor
     if (e.key === 'Shift' || e.shiftKey) {
       if (!showCreateToolbar()) HL.toolbar.hide();
     }
@@ -249,19 +287,27 @@
     document.addEventListener(
       'mousedown',
       (e) => {
-        if (!HL.toolbar.owns(e)) HL.toolbar.hide();
+        if (HL.toolbar.owns(e)) return;
+        // Clicking away from the note editor keeps what was typed.
+        if (HL.toolbar.isEditingNote()) HL.toolbar.commitNote();
+        else HL.toolbar.hide();
       },
       true
     );
     document.addEventListener(
       'keydown',
       (e) => {
-        if (e.key === 'Escape') HL.toolbar.hide();
+        // The note editor handles its own Escape (cancel).
+        if (e.key === 'Escape' && !HL.toolbar.owns(e)) HL.toolbar.hide();
       },
       true
     );
-    window.addEventListener('scroll', () => HL.toolbar.hide(), { capture: true, passive: true });
-    window.addEventListener('resize', () => HL.toolbar.hide());
+    // The note editor stays open on scroll and resize so typing isn't lost.
+    const hideUnlessEditing = () => {
+      if (!HL.toolbar.isEditingNote()) HL.toolbar.hide();
+    };
+    window.addEventListener('scroll', hideUnlessEditing, { capture: true, passive: true });
+    window.addEventListener('resize', hideUnlessEditing);
     window.addEventListener('popstate', scheduleCheck);
 
     if (document.body) {
@@ -288,8 +334,9 @@
   function handleMessage(msg) {
     switch (msg && msg.type) {
       case HL.MSG.HIGHLIGHT_SELECTION:
+        HL.toolbar.commitNote();
         HL.toolbar.hide();
-        return { ok: highlightSelection(settings.defaultColor) };
+        return { ok: !!highlightSelection(settings.defaultColor) };
       case HL.MSG.LIST:
         return { title: document.title, url: location.href, highlights: listHighlights() };
       case HL.MSG.SCROLL_TO:
@@ -313,6 +360,13 @@
       if (a.mark || b.mark) return a.mark ? -1 : 1;
       return a.h.createdAt - b.h.createdAt;
     });
-    return items.map(({ h, mark }) => ({ id: h.id, color: h.color, text: h.text, createdAt: h.createdAt, found: !!mark }));
+    return items.map(({ h, mark }) => ({
+      id: h.id,
+      color: h.color,
+      text: h.text,
+      note: HL.noteOf(h) || undefined,
+      createdAt: h.createdAt,
+      found: !!mark
+    }));
   }
 })();

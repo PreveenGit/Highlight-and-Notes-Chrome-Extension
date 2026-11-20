@@ -58,11 +58,25 @@
   HL.diffHighlights = function diffHighlights(oldList, newList) {
     const before = new Map(oldList.map((h) => [h.id, h]));
     const after = new Set(newList.map((h) => h.id));
+    const kept = newList.filter((h) => before.has(h.id));
     return {
       added: newList.filter((h) => !before.has(h.id)),
       removed: oldList.filter((h) => !after.has(h.id)),
-      recolored: newList.filter((h) => before.has(h.id) && before.get(h.id).color !== h.color)
+      recolored: kept.filter((h) => before.get(h.id).color !== h.color),
+      noted: kept.filter((h) => HL.noteOf(before.get(h.id)) !== HL.noteOf(h))
     };
+  };
+
+  // A highlight's note, or '' when it has none. Notes are optional plain text.
+  HL.noteOf = function noteOf(h) {
+    return h && typeof h.note === 'string' ? h.note.trim() : '';
+  };
+
+  // Copy of `h` with its note set to `note`; an empty note removes the field.
+  HL.withNote = function withNote(h, note) {
+    const { note: _old, ...rest } = h;
+    const text = typeof note === 'string' ? note.trim() : '';
+    return text ? { ...rest, note: text } : rest;
   };
 
   HL.getSettings = async function getSettings() {

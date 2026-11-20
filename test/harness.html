@@ -166,6 +166,19 @@
         eq(fixture.innerHTML, before, 'markup');
       });
 
+      test('setNote adds a tooltip to every mark and a badge to the last one', () => {
+        const before = setup(CROSS).text;
+        marker.wrapRange(rangeOver('lo', 'Sec'), 'a', 'yellow');
+        const marks = marker.getMarks('a');
+        marker.setNote('a', '  my note \n line two ');
+        eq(marks.every((m) => m.title === 'my note \n line two'), true, 'title on every mark');
+        eq(marks.filter((m) => m.classList.contains('hl-note-badge')).length, 1, 'one badge');
+        eq(marks[marks.length - 1].classList.contains('hl-note-badge'), true, 'badge on last mark');
+        eq(anchor.buildIndex(fixture).text, before, 'page text unchanged');
+        marker.setNote('a', '   ');
+        eq(marks.some((m) => m.hasAttribute('title') || m.classList.contains('hl-note-badge')), false, 'cleared');
+      });
+
       test('page text is unchanged by marks', () => {
         const before = setup(CROSS).text;
         marker.wrapRange(rangeOver('Hello', 'here'), 'a', 'yellow');
@@ -247,6 +260,27 @@
         eq(md, '## [A \\[draft\\] page](https://x.test/a%20b)\n\n> one two\n\n> three\n', 'markdown');
       });
 
+      test('Markdown export puts each note after its quote', () => {
+        const md = HL.data.toMarkdown([
+          { title: 'P', url: 'https://x.test/', highlights: [{ text: 'one', note: ' first line \nsecond ' }, { text: 'two', note: '  ' }] }
+        ]);
+        eq(md, '## [P](https://x.test/)\n\n> one\n\n**Note:** first line  \nsecond\n\n> two\n', 'markdown');
+      });
+
+      test('search also matches note text', () => {
+        const pages = HL.data.toPages(STORAGE);
+        pages[0].highlights = pages[0].highlights.map((h) => (h.id === 'f1' ? { ...h, note: 'Remember for the essay' } : h));
+        eq(ids(HL.data.filterAndSort(pages, { query: 'essay' }).timeline.map((t) => t.highlight)), 'f1', 'note match');
+        eq(ids(HL.data.filterAndSort(pages, { query: 'quick essay' }).timeline.map((t) => t.highlight)), 'f1', 'text + note');
+      });
+
+      test('withNote sets, trims and removes a note', () => {
+        const base = hl('a', 'pink', 'A', 1);
+        eq(HL.withNote(base, '  hi  ').note, 'hi', 'trimmed');
+        eq('note' in HL.withNote({ ...base, note: 'old' }, ' '), false, 'empty removes the field');
+        eq('note' in HL.withNote(base, 42), false, 'non-string ignored');
+      });
+
       test('backup round trip keeps every highlight', () => {
         const pages = HL.data.toPages(STORAGE);
         const back = HL.data.parseBackup(JSON.stringify(HL.data.toBackup(pages)));
@@ -284,6 +318,31 @@
         eq(pages[0].highlights[0].text, 'hi', 'text falls back to quote');
       });
 
+      test('backup keeps string notes and drops bad ones', () => {
+        const pages = HL.data.parseBackup(
+          JSON.stringify({
+            format: 'highlight-backup',
+            version: 1,
+            pages: [
+              {
+                url: 'https://a.test/',
+                highlights: [
+                  { id: 'n1', quote: { exact: 'a' }, note: ' keep me ' },
+                  { id: 'n2', quote: { exact: 'b' }, note: { evil: true } },
+                  { id: 'n3', quote: { exact: 'c' }, note: '   ' }
+                ]
+              }
+            ]
+          })
+        );
+        const [n1, n2, n3] = pages[0].highlights;
+        eq(n1.note, 'keep me', 'string note kept, trimmed');
+        eq('note' in n2, false, 'object note dropped');
+        eq('note' in n3, false, 'blank note dropped');
+        const round = HL.data.parseBackup(JSON.stringify(HL.data.toBackup(pages)));
+        eq(round[0].highlights[0].note, 'keep me', 'round trip');
+      });
+
       test('merging keeps existing highlights and skips duplicates', () => {
         const existing = [hl('a', 'pink', 'A', 1), hl('b', 'blue', 'B', 2)];
         const incoming = [hl('b', 'yellow', 'B', 2), hl('c', 'green', 'C', 3), hl('c', 'green', 'C', 3)];
@@ -301,6 +360,13 @@
         eq(ids(diff.added), 'd', 'added');
         eq(ids(diff.removed), 'c', 'removed');
         eq(ids(diff.recolored), 'b', 'recolored');
+        eq(ids(diff.noted), '', 'no note changes');
+      });
+
+      test('diffHighlights finds note changes', () => {
+        const before = [hl('a', 'pink', 'A', 1), { ...hl('b', 'blue', 'B', 2), note: 'old' }, { ...hl('c', 'green', 'C', 3), note: 'same' }];
+        const after = [{ ...hl('a', 'pink', 'A', 1), note: 'new' }, hl('b', 'blue', 'B', 2), { ...hl('c', 'green', 'C', 3), note: 'same ' }];
+        eq(ids(HL.diffHighlights(before, after).noted), 'a,b', 'added and removed notes; whitespace-only change ignored');
       });
 
       const failed = results.filter((r) => !r.ok);

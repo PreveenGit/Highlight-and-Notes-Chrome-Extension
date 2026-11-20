@@ -18,6 +18,20 @@ mark.hl-mark:hover {
   filter: brightness(0.94);
 }
 
+/* A highlight with a note: a small badge after its last piece (set by marker.js).
+   Drawn with CSS only, since a page's CSP could block an image. */
+mark.hl-mark.hl-note-badge::after {
+  content: '' !important;
+  display: inline-block !important;
+  width: 7px !important;
+  height: 7px !important;
+  margin: 0 1px 0 3px !important;
+  vertical-align: 0.45em !important;
+  border-radius: 50% 50% 50% 0 !important;
+  background: #3c4043 !important;
+  box-shadow: 0 0 0 1.5px rgba(255, 255, 255, 0.9) !important;
+}
+
 mark.hl-mark.hl-flash {
   animation: hl-flash 0.6s ease-in-out 3;
 }

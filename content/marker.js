@@ -5,6 +5,7 @@
   const HL = globalThis.HL;
   const MARK_CLASS = 'hl-mark';
   const FLASH_CLASS = 'hl-flash';
+  const NOTE_CLASS = 'hl-note-badge';
   const SKIP_SELECTOR = 'script, style, noscript, template, textarea, input, select, option';
 
   function selector(id) {
@@ -108,6 +109,18 @@
     getMarks(id).forEach((mark) => paint(mark, color));
   }
 
+  // Shows a note as a hover tooltip on every mark and a badge after the last one.
+  // The badge is a CSS ::after, so the page text (and the anchor index) is unchanged.
+  function setNote(id, note) {
+    const text = typeof note === 'string' ? note.trim() : '';
+    const marks = getMarks(id);
+    marks.forEach((mark, i) => {
+      if (text) mark.title = text;
+      else mark.removeAttribute('title');
+      mark.classList.toggle(NOTE_CLASS, !!text && i === marks.length - 1);
+    });
+  }
+
   // Scrolls the highlight into view and pulses it. Returns false if it isn't on the page.
   function flash(id) {
     const marks = getMarks(id);
@@ -122,5 +135,5 @@
     return true;
   }
 
-  HL.marker = { MARK_CLASS, wrapRange, unwrap, unwrapAll, recolor, flash, getMarks, exists, first };
+  HL.marker = { MARK_CLASS, wrapRange, unwrap, unwrapAll, recolor, setNote, flash, getMarks, exists, first };
 })();

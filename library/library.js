@@ -8,6 +8,7 @@
 
   const ICONS = {
     chevron: 'M16.59 8.59 12 13.17 7.41 8.59 6 10l6 6 6-6z',
+    note: 'M21.99 4c0-1.1-.89-2-1.99-2H4c-1.1 0-2 .9-2 2v12c0 1.1.9 2 2 2h14l4 4-.01-18zM18 14H6v-2h12v2zm0-3H6V9h12v2zm0-3H6V6h12v2z',
     palette:
       'M12 3a9 9 0 0 0 0 18c.83 0 1.5-.67 1.5-1.5 0-.39-.15-.74-.39-1.01-.23-.26-.38-.61-.38-.99 0-.83.67-1.5 1.5-1.5H16c2.76 0 5-2.24 5-5 0-4.42-4.03-8-9-8zm-5.5 9a1.5 1.5 0 1 1 0-3 1.5 1.5 0 0 1 0 3zm3-4a1.5 1.5 0 1 1 0-3 1.5 1.5 0 0 1 0 3zm5 0a1.5 1.5 0 1 1 0-3 1.5 1.5 0 0 1 0 3zm3 4a1.5 1.5 0 1 1 0-3 1.5 1.5 0 0 1 0 3z',
     copy: 'M16 1H4c-1.1 0-2 .9-2 2v14h2V3h12V1zm3 4H8c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h11c1.1 0 2-.9 2-2V7c0-1.1-.9-2-2-2zm0 16H8V7h11v14z',
@@ -26,7 +27,8 @@
     colors: new Set(),
     sort: 'newest',
     collapsed: new Set(),
-    timelineLimit: TIMELINE_PAGE
+    timelineLimit: TIMELINE_PAGE,
+    editing: null // note being edited: { key, id, draft }; survives re-renders
   };
   let pages = []; // every stored page (HL.data.toPages)
   let current = null; // side panel: the active tab's page, as its content script reports it
@@ -100,7 +102,31 @@
     }
     $('sort').hidden = state.view === 'page';
     const view = state.view === 'page' ? renderCurrent() : state.view === 'pages' ? renderPages() : renderTimeline();
+    const editor = editorState();
     $('content').replaceChildren(...view);
+    restoreEditor(editor);
+  }
+
+  // Re-renders happen often (storage changes, tab switches, window focus), so the
+  // open note editor keeps its focus and caret across them.
+  function editorState() {
+    const area = $('content').querySelector('.note-editor textarea');
+    if (!area) return null;
+    return { focused: document.activeElement === area, start: area.selectionStart, end: area.selectionEnd, scroll: area.scrollTop };
+  }
+
+  function restoreEditor(before) {
+    const area = $('content').querySelector('.note-editor textarea');
+    if (!area) return;
+    if (!before) {
+      // Just opened.
+      area.focus();
+      area.setSelectionRange(area.value.length, area.value.length);
+    } else if (before.focused) {
+      area.focus({ preventScroll: true });
+      area.setSelectionRange(before.start, before.end);
+      area.scrollTop = before.scroll;
+    }
   }
 
   function renderCurrent() {
@@ -220,13 +246,23 @@
     const bar = el('span', 'bar');
     bar.style.background = HL.COLORS[h.color] || HL.COLORS.yellow;
 
+    const terms = HL.data.searchTerms(state.query);
+    const note = HL.noteOf(h);
+    const editing = !!state.editing && state.editing.id === h.id && state.editing.key === page.key;
+
     const main = el('div', 'item-main');
     main.dataset.action = 'open';
     main.tabIndex = 0;
     main.setAttribute('role', 'button');
     main.title = orphan ? '' : isCurrent(page.key) ? 'Show on page' : 'Open the page and show';
     const text = el('p', 'text');
-    appendWithHits(text, String(h.text || ''), HL.data.searchTerms(state.query));
+    appendWithHits(text, String(h.text || ''), terms);
+    main.append(text);
+    if (note && !editing) {
+      const noteEl = el('p', 'user-note');
+      appendWithHits(noteEl, note, terms);
+      main.append(noteEl);
+    }
     const meta = el('span', 'meta');
     meta.textContent = [
       showPage ? page.title : '',
@@ -235,10 +271,18 @@
     ]
       .filter(Boolean)
       .join(' · ');
-    main.append(text, meta);
+    main.append(meta);
+
+    // The editor sits outside .item-main, which is itself a button.
+    const body = el('div', 'item-body');
+    body.append(main);
+    if (editing) body.append(noteEditor());
 
     const actions = el('div', 'item-actions');
+    const noteButton = iconButton('note', note ? 'Edit note' : 'Add note', 'note');
+    noteButton.classList.toggle('on', !!note);
     actions.append(
+      noteButton,
       iconButton('palette', 'Change color', 'pick'),
       iconButton('copy', 'Copy text', 'copy'),
       iconButton('delete', 'Delete highlight', 'delete')
@@ -257,8 +301,38 @@
       swatches.append(b);
     }
 
-    li.append(bar, main, actions, swatches);
+    li.append(bar, body, actions, swatches);
     return li;
+  }
+
+  function noteEditor() {
+    const box = el('div', 'note-editor');
+    box.dataset.action = 'noop'; // clicks inside must not open the highlight
+    const area = el('textarea');
+    area.value = state.editing.draft;
+    area.rows = 3;
+    area.placeholder = 'Add a note…';
+    area.setAttribute('aria-label', 'Note');
+    area.addEventListener('input', () => {
+      if (state.editing) state.editing.draft = area.value;
+    });
+    const row = el('div', 'note-row');
+    const hint = el('span', 'hint muted');
+    hint.textContent = /Mac|iP(hone|ad)/.test(navigator.platform) ? '⌘↵ to save' : 'Ctrl+Enter to save';
+    const cancel = textButton('Cancel', 'note-cancel');
+    const save = textButton('Save', 'note-save');
+    save.classList.add('primary');
+    row.append(hint, cancel, save);
+    box.append(area, row);
+    return box;
+  }
+
+  function textButton(label, action) {
+    const b = el('button', 'text-btn');
+    b.type = 'button';
+    b.textContent = label;
+    b.dataset.action = action;
+    return b;
   }
 
   // Sets `parent`'s text, wrapping search matches in <mark class="hit">.
@@ -392,6 +466,21 @@
         closePickers();
         await HL.mutatePage(key, (list) => list.map((h) => (h.id === id ? { ...h, color: target.dataset.color } : h)));
         break;
+      case 'note': {
+        if (state.editing && state.editing.id === id && state.editing.key === key) break;
+        if (state.editing) await saveNote(); // keep what was typed in another note
+        const page = findPage(key);
+        const h = page && page.highlights.find((x) => x.id === id);
+        state.editing = { key, id, draft: HL.noteOf(h) };
+        render();
+        break;
+      }
+      case 'note-save':
+        await saveNote();
+        break;
+      case 'note-cancel':
+        cancelNote();
+        break;
       case 'copy':
         await copy(findPage(key).highlights.find((h) => h.id === id).text);
         break;
@@ -431,6 +520,25 @@
       const res = await send(tab.id, { type: HL.MSG.SCROLL_TO, id });
       if (res && res.ok) return;
     }
+  }
+
+  async function saveNote() {
+    const edit = state.editing;
+    if (!edit) return;
+    state.editing = null;
+    const change = (h) => (h.id === edit.id ? HL.withNote(h, edit.draft) : h);
+    await HL.mutatePage(edit.key, (list) => list.map(change));
+    // Show it now rather than after the storage-change reload.
+    const stored = pages.find((p) => p.key === edit.key);
+    if (stored) stored.highlights = stored.highlights.map(change);
+    if (isCurrent(edit.key)) current.highlights = current.highlights.map(change);
+    render();
+  }
+
+  function cancelNote() {
+    if (!state.editing) return;
+    state.editing = null;
+    render();
   }
 
   async function deleteHighlights(key, ids) {
@@ -551,6 +659,13 @@
   function bindEvents() {
     $('content').addEventListener('click', onAction);
     $('content').addEventListener('keydown', (e) => {
+      if (e.target.matches('.note-editor textarea')) {
+        if (e.key === 'Enter' && (e.ctrlKey || e.metaKey)) {
+          e.preventDefault();
+          saveNote();
+        }
+        return; // Escape is handled below, on document
+      }
       if ((e.key === 'Enter' || e.key === ' ') && e.target.matches('.item-main')) {
         e.preventDefault();
         onAction(e);
@@ -620,6 +735,7 @@
       if (e.key !== 'Escape') return;
       setMenu(false);
       closePickers();
+      cancelNote();
     });
 
     $('toastUndo').addEventListener('click', async () => {

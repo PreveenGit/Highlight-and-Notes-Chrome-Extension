@@ -1,5 +1,5 @@
 // Highlights for the current page, kept in chrome.storage.local under one key per page:
-//   "hl:<url>" -> { url, title, highlights: [{ id, color, text, quote, position, createdAt }] }
+//   "hl:<url>" -> { url, title, highlights: [{ id, color, text, quote, position, createdAt, note? }] }
 //
 // The in-memory list changes immediately so the page and the store never disagree.
 // Writes re-read storage first (HL.mutatePage), so another tab on the same URL is
@@ -46,7 +46,7 @@
         const next = stored ? stored.highlights : [];
         const diff = HL.diffHighlights(highlights, next);
         highlights = next;
-        if (diff.added.length || diff.removed.length || diff.recolored.length) onExternal(diff);
+        if (diff.added.length || diff.removed.length || diff.recolored.length || diff.noted.length) onExternal(diff);
       })
       .catch((err) => console.warn('[Highlight] could not sync:', err));
   }
@@ -62,6 +62,7 @@
     get: (id) => highlights.find((h) => h.id === id),
     add: (highlight) => mutate((list) => [...list.filter((h) => h.id !== highlight.id), highlight]),
     update: (id, patch) => mutate((list) => list.map((h) => (h.id === id ? { ...h, ...patch } : h))),
+    setNote: (id, note) => mutate((list) => list.map((h) => (h.id === id ? HL.withNote(h, note) : h))),
     remove: (id) => mutate((list) => list.filter((h) => h.id !== id)),
     clear: () => mutate(() => []),
     onExternalChange: (fn) => {
