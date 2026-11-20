@@ -19,7 +19,7 @@
   </head>
   <body>
     <!-- Sample article for the store screenshots (original text). Open with ?stub to run
-         the extension on it; &scene=marks|toolbar|edit sets up what the screenshot shows. -->
+         the extension on it; &scene=marks|toolbar|edit|note sets up what the screenshot shows. -->
     <header class="site">
       <span class="logo"></span> Field Notes
       <nav><span>Essays</span><span>Archive</span><span>About</span></nav>
@@ -51,13 +51,15 @@
 
     <script src="../../test/load-extension.js"></script>
     <script>
-      // Highlights to create, in order, and what each scene adds on top.
+      // Highlights to create, in order (with an optional note), and what each scene adds on top.
       const MARKS = [
-        ['Reading is not a race; it is a conversation with someone who is not in the room.', 'yellow'],
+        ['Reading is not a race; it is a conversation with someone who is not in the room.', 'yellow', 'Opening line for my talk on attention?'],
         ['mark the sentence that changed your mind', 'green'],
-        ['the margins of a page were where thinking happened', 'blue'],
+        ['the margins of a page were where thinking happened', 'blue', 'Compare with the essay on marginalia in old books.'],
         ['Return to your highlights a week later.', 'pink']
       ];
+      // Typed into the note editor in the "note" scene.
+      const NOTE_DRAFT = 'Set a weekly reminder: review highlights every Sunday morning.';
       const scene = new URLSearchParams(location.search).get('scene');
       window.__sceneReady = !scene; // test/preview.html waits for this before opening its UI
 
@@ -82,12 +84,20 @@
         };
 
         await __hlSend({ type: 'clear' });
-        for (const [phrase, color] of MARKS) {
+        for (const [phrase, color, note] of MARKS) {
           await useColor(color);
           select(phrase);
           await __hlSend({ type: 'highlight-selection' });
+          if (note) {
+            const { id } = HL.store.all().at(-1);
+            HL.marker.setNote(id, note);
+            await HL.store.setNote(id, note);
+          }
         }
         await useColor('yellow');
+
+        const pinkMark = () => document.querySelector('mark.hl-mark[data-hl-color="pink"]');
+        const showNoteEditor = () => HL.toolbar.showNote(pinkMark().getBoundingClientRect(), { text: NOTE_DRAFT });
 
         // Show the toolbars through the same mouseup handling a real click uses.
         const showToolbar = () => {
@@ -103,6 +113,13 @@
             const mark = document.querySelector('mark.hl-mark[data-hl-color="green"]');
             const rect = mark.getBoundingClientRect();
             mark.dispatchEvent(new MouseEvent('mouseup', { bubbles: true, button: 0, clientX: rect.left + 10, clientY: rect.top + 5 }));
+          } else if (scene === 'note') {
+            // Click the highlight (as a user would before pressing the note button), then
+            // open the editor with a note being written.
+            getSelection().removeAllRanges();
+            const rect = pinkMark().getBoundingClientRect();
+            pinkMark().dispatchEvent(new MouseEvent('mouseup', { bubbles: true, button: 0, clientX: rect.left + 10, clientY: rect.top + 5 }));
+            setTimeout(showNoteEditor, 20); // after the edit toolbar the click opens
           }
         };
         showToolbar();
@@ -117,6 +134,8 @@
           } else if (scene === 'edit') {
             const mark = document.querySelector('mark.hl-mark[data-hl-color="green"]');
             HL.toolbar.show(mark.getBoundingClientRect(), { mode: 'edit', color: 'green' });
+          } else if (scene === 'note') {
+            showNoteEditor(); // re-place it for the new window size
           }
         });
         await wait(100);

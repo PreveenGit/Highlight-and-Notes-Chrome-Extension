@@ -4,7 +4,7 @@
     "title": "Small writing habits that compound",
     "highlights": [
       { "id": "s-write-1", "color": "yellow", "text": "Write a little every day, even when it feels like nothing is happening.", "daysAgo": 0.08 },
-      { "id": "s-write-2", "color": "pink", "text": "Keep a file of sentences you wish you had written, and read it before you start.", "daysAgo": 0.07 },
+      { "id": "s-write-2", "color": "pink", "text": "Keep a file of sentences you wish you had written, and read it before you start.", "daysAgo": 0.07, "note": "Start this file tonight. Seed it with the opening of my favorite essay." },
       { "id": "s-write-3", "color": "blue", "text": "Edit on paper; it shows you what the screen hides.", "daysAgo": 0.06 }
     ]
   },
@@ -13,7 +13,7 @@
     "title": "What sleep does for memory",
     "highlights": [
       { "id": "s-sleep-1", "color": "green", "text": "During deep sleep, the brain replays the day's experiences and decides what to keep.", "daysAgo": 1.2 },
-      { "id": "s-sleep-2", "color": "yellow", "text": "Memory is less a recording than a reconstruction, rebuilt a little differently each time we read it back.", "daysAgo": 1.1 },
+      { "id": "s-sleep-2", "color": "yellow", "text": "Memory is less a recording than a reconstruction, rebuilt a little differently each time we read it back.", "daysAgo": 1.1, "note": "Good quote for the talk on note-taking." },
       { "id": "s-sleep-3", "color": "pink", "text": "Short naps help, but only when they stay under thirty minutes.", "daysAgo": 1.0 }
     ]
   },
@@ -22,7 +22,7 @@
     "title": "Designing readable interfaces",
     "highlights": [
       { "id": "s-design-1", "color": "blue", "text": "Body text needs a contrast ratio of at least 4.5 to 1 to stay readable.", "daysAgo": 3 },
-      { "id": "s-design-2", "color": "orange", "text": "Never rely on color alone to carry meaning.", "daysAgo": 3.1 },
+      { "id": "s-design-2", "color": "orange", "text": "Never rely on color alone to carry meaning.", "daysAgo": 3.1, "note": "Check the status badges on our dashboard: red and green only." },
       { "id": "s-design-3", "color": "green", "text": "Lines of 50 to 75 characters are the easiest to read.", "daysAgo": 3.2 }
     ]
   },
@@ -47,7 +47,7 @@
     "title": "How to read a research paper in three passes",
     "highlights": [
       { "id": "s-paper-1", "color": "pink", "text": "Read the abstract, the headings and the conclusion before anything else.", "daysAgo": 21 },
-      { "id": "s-paper-2", "color": "yellow", "text": "On the second pass, read the figures as carefully as the text.", "daysAgo": 21.1 }
+      { "id": "s-paper-2", "color": "yellow", "text": "On the second pass, read the figures as carefully as the text.", "daysAgo": 21.1, "note": "Try this on the paper for Friday's reading group." }
     ]
   }
 ]

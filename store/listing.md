@@ -5,8 +5,8 @@ Copy-ready text for the [Developer Dashboard](https://chrome.google.com/webstore
 ## Before you submit
 
 - [ ] Pick the final name. `manifest.json` says **Highlight**, which is generic and likely shared with other extensions. Options: *Highlight & Library*, *Margin — web highlighter*, *Keepmark*. If you change it, update `name` in `manifest.json`.
-- [ ] Replace `CONTACT_EMAIL` in `docs/privacy-policy.html`, then host the page (see "Privacy policy" below).
-- [ ] Bump `version` in `manifest.json` if this isn't the first upload, then run `.\store\package.ps1` and upload `dist/highlight-<version>.zip`.
+- [x] Contact email set in `docs/privacy-policy.html`; the page is published with GitLab Pages (see "Privacy policy URL" below).
+- [ ] Bump `version` in `manifest.json` if this isn't the first upload, then run `.\store\package.ps1` and upload `dist/highlight-<version>.zip`. The script leaves the manifest's `key` out of the zip: that key only fixes the ID of the unpacked copy (`liacochebilhgigkfdjfacplcgpiohdf`), and the store gives the item its own ID. Keep `store/extension-key.pem` private and out of git.
 - [ ] Have the screenshots from `store/screenshots/` ready (1280×800 PNG).
 
 ---
@@ -19,7 +19,7 @@ Upload `dist/highlight-<version>.zip` built by `store/package.ps1`.
 
 **Summary** (from `manifest.json`, max 132 characters)
 
-> Highlight words and sentences on any web page. Highlights are saved per page and restored when you come back.
+> Highlight words and sentences on any web page and add notes. Highlights are saved per page and restored when you come back.
 
 **Description**
 
@@ -28,12 +28,13 @@ Highlight words and sentences on any web page, like a highlighter pen, and find 
 
 HIGHLIGHT AS YOU READ
 • Select text and pick one of five colors from the small toolbar, or press Alt+Shift+H.
-• Click a highlight to change its color, copy it, or remove it.
+• Click a highlight to change its color, add a note, copy it, or remove it.
+• Add a note to any highlight. A small badge marks it on the page; hover to read the note.
 • Highlights come back automatically when you return to the page, even if the page has changed a little.
 
 ONE LIBRARY FOR EVERYTHING
 • See every highlight from every page in Chrome's side panel (Alt+Shift+L) or in a full tab.
-• Search highlight text, page titles and sites. Filter by color. Sort by date, site or number of highlights.
+• Search highlight text, notes, page titles and sites. Filter by color. Sort by date, site or number of highlights.
 • Browse page by page, or as a timeline with the newest first.
 • Click any highlight to jump straight to it on its page.
 • Recolor or delete from the library, with undo. Open tabs update instantly.
@@ -59,11 +60,11 @@ Works on most web pages. Chrome doesn't allow extensions on chrome:// pages, the
 
 | File | Shows |
 | --- | --- |
-| `store/screenshots/1-highlight.png` | Highlights on an article and the color toolbar over a selection |
-| `store/screenshots/2-side-panel.png` | The side panel listing the current page's highlights |
-| `store/screenshots/3-library.png` | The full-tab library with highlights grouped by page |
-| `store/screenshots/4-search.png` | Searching all highlights, in timeline view |
-| `store/screenshots/5-edit.png` | Clicking a highlight to recolor, copy or remove it |
+| `store/screenshots/1-highlight.png` | Highlights on an article (badges mark the ones with notes) and the toolbar over a selection |
+| `store/screenshots/2-side-panel.png` | The side panel listing the current page's highlights and their notes |
+| `store/screenshots/3-library.png` | The full-tab library with highlights and notes grouped by page |
+| `store/screenshots/4-search.png` | Searching all highlights and notes, in timeline view |
+| `store/screenshots/5-note.png` | Writing a note on a highlight |
 
 Small promo tile (440×280) and marquee (1400×560) are optional and not included.
 
@@ -71,13 +72,13 @@ Small promo tile (440×280) and marquee (1400×560) are optional and not include
 
 **Single purpose**
 
-> Highlight text on web pages, keep those highlights on the user's device, and let the user browse, search and manage them in a library.
+> Highlight text on web pages and add optional notes to those highlights, keep them on the user's device, and let the user browse, search and manage them in a library.
 
 **Permission justifications**
 
 | Permission | Justification |
 | --- | --- |
-| `storage` | Saves the user's highlights and settings in Chrome's local storage on their device. |
+| `storage` | Saves the user's highlights, the notes they add to them, and their settings in Chrome's local storage on their device. |
 | `unlimitedStorage` | Lets large highlight libraries and imported backups exceed the default local storage quota. Data stays on the device. |
 | `sidePanel` | Shows the highlight library in Chrome's side panel next to the page the user is reading. |
 | `favicon` | Shows each page's icon next to its highlights in the library, using Chrome's local favicon cache. |
@@ -87,10 +88,10 @@ Small promo tile (440×280) and marquee (1400×560) are optional and not include
 
 **Data usage — what user data do you collect?** The store counts data the extension stores locally as "handling" user data, even when it never leaves the device. Tick:
 
-- [x] **Website content** — the highlighted text and a few characters around it.
+- [x] **Website content** — the highlighted text and a few characters around it, plus any note the user writes on a highlight.
 - [x] **Web history** — the URL and title of pages where the user made a highlight, and when.
 
-Leave everything else unticked (no personally identifiable, health, financial, authentication, communications, location or user activity data).
+Leave everything else unticked (no personally identifiable, health, financial, authentication, communications, location or user activity data). Notes are text the user chooses to save next to a highlight, not keystroke logging, so they don't make it "user activity"; they're disclosed under website content and in the privacy policy.
 
 **Certifications** — tick all three:
 
@@ -98,7 +99,7 @@ Leave everything else unticked (no personally identifiable, health, financial, a
 - [x] I do not use or transfer user data for purposes that are unrelated to my item's single purpose.
 - [x] I do not use or transfer user data to determine creditworthiness or for lending purposes.
 
-**Privacy policy URL:** where `docs/privacy-policy.html` is hosted. With GitHub, push this repo, open **Settings → Pages**, choose **Deploy from a branch**, branch `main`, folder `/docs`, and use `https://<user>.github.io/<repo>/privacy-policy.html`.
+**Privacy policy URL:** `docs/` is published by GitLab Pages (`.gitlab-ci.yml`) from the private project `tools9595147/highlight-and-notes-chrome-extension`. In GitLab, set **Settings → General → Visibility → Pages** to **Everyone**, then copy the address from **Deploy → Pages** and add `/privacy-policy.html` (normally `https://tools9595147.gitlab.io/highlight-and-notes-chrome-extension/privacy-policy.html`).
 
 ## Distribution tab
 
