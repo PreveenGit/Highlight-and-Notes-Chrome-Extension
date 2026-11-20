@@ -5,7 +5,7 @@ Copy-ready text for the [Developer Dashboard](https://chrome.google.com/webstore
 ## Before you submit
 
 - [ ] Pick the final name. `manifest.json` says **Highlight**, which is generic and likely shared with other extensions. Options: *Highlight & Library*, *Margin — web highlighter*, *Keepmark*. If you change it, update `name` in `manifest.json`.
-- [x] Contact email set in `docs/privacy-policy.html`; the page is published with GitLab Pages (see "Privacy policy URL" below).
+- [x] Contact email set in `docs/privacy-policy.html`; the page is published with GitHub Pages (see "Privacy policy URL" below).
 - [ ] Bump `version` in `manifest.json` if this isn't the first upload, then run `.\store\package.ps1` and upload `dist/highlight-<version>.zip`. The script leaves the manifest's `key` out of the zip: that key only fixes the ID of the unpacked copy (`liacochebilhgigkfdjfacplcgpiohdf`), and the store gives the item its own ID. Keep `store/extension-key.pem` private and out of git.
 - [ ] Have the screenshots from `store/screenshots/` ready (1280×800 PNG).
 
@@ -99,7 +99,9 @@ Leave everything else unticked (no personally identifiable, health, financial, a
 - [x] I do not use or transfer user data for purposes that are unrelated to my item's single purpose.
 - [x] I do not use or transfer user data to determine creditworthiness or for lending purposes.
 
-**Privacy policy URL:** `docs/` is published by GitLab Pages (`.gitlab-ci.yml`) from the private project `tools9595147/highlight-and-notes-chrome-extension`. In GitLab, set **Settings → General → Visibility → Pages** to **Everyone**, then copy the address from **Deploy → Pages** and add `/privacy-policy.html` (normally `https://tools9595147.gitlab.io/highlight-and-notes-chrome-extension/privacy-policy.html`).
+**Privacy policy URL:** `https://preveengit.github.io/Highlight-and-Notes-Chrome-Extension/privacy-policy.html`
+
+GitHub Pages publishes `docs/` from the `main` branch of `PreveenGit/Highlight-and-Notes-Chrome-Extension` (**Settings → Pages → Deploy from a branch → `main` / `docs`**), so pushing a change to `docs/privacy-policy.html` updates the page.
 
 ## Distribution tab
 
