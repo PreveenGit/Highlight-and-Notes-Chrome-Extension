@@ -30,6 +30,7 @@ HIGHLIGHT AS YOU READ
 • Select text and pick one of five colors from the small toolbar, or press Alt+Shift+H.
 • Click a highlight to change its color, add a note, copy it, or remove it.
 • Add a note to any highlight. A small badge marks it on the page; hover to read the note.
+• Bookmark a line to keep your place. Next time, click Jump to bookmark in the toolbar popup to go straight back to it.
 • Highlights come back automatically when you return to the page, even if the page has changed a little.
 
 ONE LIBRARY FOR EVERYTHING

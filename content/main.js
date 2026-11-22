@@ -53,6 +53,7 @@
       const range = HL.anchor.toRange(HL.anchor.buildIndex(), at.start, at.end);
       if (range && HL.marker.wrapRange(range, h.id, h.color).length) {
         unresolved.delete(h.id);
+        if (h.bookmark) HL.marker.setBookmark(h.id);
         HL.marker.setNote(h.id, h.note);
       }
     }
@@ -99,7 +100,8 @@
   }
 
   // Returns the new highlight's id, or null if nothing could be highlighted.
-  function highlightRange(range, color) {
+  // `extra` is merged into the saved record ({ bookmark: true } for a bookmark).
+  function highlightRange(range, color, extra = {}) {
     if (!range || range.collapsed) return null;
     const index = HL.anchor.buildIndex();
     const anchor = HL.anchor.fromRange(index, range);
@@ -112,8 +114,20 @@
     const text = (sel.isCollapsed ? anchor.quote.exact : sel.toString()).replace(/\s+/g, ' ').trim();
     const id = newId();
     if (!target || !HL.marker.wrapRange(target, id, color).length) return null;
+    if (extra.bookmark) HL.marker.setBookmark(id);
     sel.removeAllRanges();
-    HL.store.add({ id, color, text: text || anchor.quote.exact, ...anchor, createdAt: Date.now() });
+    HL.store.add({ id, color, text: text || anchor.quote.exact, ...anchor, createdAt: Date.now(), ...extra });
+    return id;
+  }
+
+  // Bookmarks the selected line. A page has one bookmark, so the old one goes, but
+  // only after the new one is wrapped: unwrapping merges text nodes, which would
+  // break the selection's range.
+  function bookmarkRange(range) {
+    const id = highlightRange(range, 'yellow', { bookmark: true });
+    if (!id) return null;
+    const older = HL.store.all().filter((h) => h.bookmark && h.id !== id);
+    older.forEach((h) => removeHighlight(h.id));
     return id;
   }
 
@@ -171,7 +185,7 @@
       HL.marker.unwrap(h.id);
       if (h.id === activeId) HL.toolbar.hide();
     }
-    for (const h of recolored) HL.marker.recolor(h.id, h.color);
+    for (const h of recolored) if (!h.bookmark) HL.marker.recolor(h.id, h.color);
     for (const h of noted) HL.marker.setNote(h.id, h.note);
     if (added.length) {
       added.forEach((h) => unresolved.add(h.id));
@@ -197,6 +211,8 @@
       if (activeId) recolor(activeId, value);
       else highlightRange(pendingRange, value);
       rememberColor(value);
+    } else if (action === 'bookmark' && !activeId) {
+      bookmarkRange(pendingRange);
     } else if (action === 'note-save' && activeId) {
       saveNote(activeId, value);
     } else if (action === 'copy' && activeId) {
@@ -255,8 +271,13 @@
   function showEditToolbar(mark) {
     activeId = mark.dataset.hlId;
     pendingRange = null;
-    const hasNote = !!HL.noteOf(HL.store.get(activeId));
-    HL.toolbar.show(mark.getBoundingClientRect(), { mode: 'edit', color: mark.dataset.hlColor, hasNote });
+    const saved = HL.store.get(activeId);
+    HL.toolbar.show(mark.getBoundingClientRect(), {
+      mode: 'edit',
+      color: mark.dataset.hlColor,
+      hasNote: !!HL.noteOf(saved),
+      bookmark: !!(saved && saved.bookmark)
+    });
   }
 
   function pointRect({ x, y }) {
@@ -365,6 +386,7 @@
       color: h.color,
       text: h.text,
       note: HL.noteOf(h) || undefined,
+      bookmark: h.bookmark || undefined,
       createdAt: h.createdAt,
       found: !!mark
     }));

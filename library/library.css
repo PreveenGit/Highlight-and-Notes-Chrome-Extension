@@ -326,6 +326,10 @@ main {
   opacity: 0.55;
 }
 
+.item.bookmark .meta {
+  color: var(--accent);
+}
+
 .bar {
   flex: none;
   width: 4px;

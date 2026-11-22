@@ -65,6 +65,42 @@ section p {
   margin: 4px 0;
 }
 
+.jump {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  width: 100%;
+  margin: 0 0 8px;
+  padding: 7px 10px;
+  border: 0;
+  border-radius: 6px;
+  background: var(--accent);
+  color: var(--bg);
+  font: inherit;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.jump[hidden] {
+  display: none;
+}
+
+.jump:hover:not(:disabled) {
+  filter: brightness(1.08);
+}
+
+.jump:disabled {
+  opacity: 0.5;
+  cursor: default;
+}
+
+.jump svg {
+  width: 16px;
+  height: 16px;
+  fill: currentColor;
+}
+
 #list {
   list-style: none;
   margin: 0;
@@ -98,6 +134,17 @@ section p {
   margin-top: 3px;
   border-radius: 50%;
   border: 1px solid rgba(0, 0, 0, 0.2);
+}
+
+/* A bookmark: a ribbon instead of a color dot. */
+.dot.bookmark {
+  width: 10px;
+  height: 13px;
+  margin: 2px 1px 0;
+  border: 0;
+  border-radius: 0;
+  background: var(--accent);
+  clip-path: polygon(0 0, 100% 0, 100% 100%, 50% 72%, 0 100%);
 }
 
 .body {

@@ -1,10 +1,12 @@
-// Floating toolbar shown next to selected text (pick a color, or add a note) or a
-// clicked highlight (recolor, note, copy, delete). It also hosts the note editor.
+// Floating toolbar shown next to selected text (pick a color, add a note, or
+// bookmark the line) or a clicked highlight (recolor, note, copy, delete). It also
+// hosts the note editor.
 // It lives in a closed Shadow DOM so page CSS can't reach it.
 (() => {
   const HL = globalThis.HL;
 
   const ICONS = {
+    bookmark: 'M17 3H7c-1.1 0-1.99.9-1.99 2L5 21l7-3 7 3V5c0-1.1-.9-2-2-2z',
     note: 'M21.99 4c0-1.1-.89-2-1.99-2H4c-1.1 0-2 .9-2 2v12c0 1.1.9 2 2 2h14l4 4-.01-18zM18 14H6v-2h12v2zm0-3H6V9h12v2zm0-3H6V6h12v2z',
     copy: 'M16 1H4c-1.1 0-2 .9-2 2v14h2V3h12V1zm3 4H8c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h11c1.1 0 2-.9 2-2V7c0-1.1-.9-2-2-2zm0 16H8V7h11v14z',
     delete: 'M6 19c0 1.1.9 2 2 2h8c1.1 0 2-.9 2-2V7H6v12zM19 4h-3.5l-1-1h-5l-1 1H5v2h14V4z'
@@ -51,6 +53,7 @@
     }
     .icon:hover { background: #3c4043; }
     .icon.on { color: #fdd663; }
+    .icon[data-action='bookmark'] { color: #8ab4f8; }
     .icon svg { width: 16px; height: 16px; fill: currentColor; }
     textarea {
       all: unset;
@@ -130,29 +133,40 @@
     document.documentElement.append(host);
   }
 
-  // mode "create": color swatches and a note button for the current selection.
-  // mode "edit": swatches to recolor plus note, copy and delete for a clicked highlight.
-  function show(rect, { mode, color, hasNote = false }) {
+  // mode "create": color swatches, a note button and a bookmark button for the
+  //   current selection.
+  // mode "edit": swatches to recolor plus note, copy and delete for a clicked
+  //   highlight. A clicked bookmark has no color, so it gets no swatches.
+  function show(rect, { mode, color, hasNote = false, bookmark = false }) {
     ensure();
     noteArea = null;
     bar.className = 'bar';
     bar.replaceChildren();
-    for (const name of HL.COLOR_NAMES) {
-      const swatch = button('color', `${mode === 'edit' ? 'Change to' : 'Highlight'} ${name}`);
-      swatch.className = 'swatch' + (mode === 'edit' && name === color ? ' active' : '');
-      swatch.dataset.color = name;
-      swatch.style.background = HL.COLORS[name];
-      bar.append(swatch);
+    if (!(mode === 'edit' && bookmark)) {
+      for (const name of HL.COLOR_NAMES) {
+        const swatch = button('color', `${mode === 'edit' ? 'Change to' : 'Highlight'} ${name}`);
+        swatch.className = 'swatch' + (mode === 'edit' && name === color ? ' active' : '');
+        swatch.dataset.color = name;
+        swatch.style.background = HL.COLORS[name];
+        bar.append(swatch);
+      }
+      const sep = document.createElement('span');
+      sep.className = 'sep';
+      bar.append(sep);
     }
-    const sep = document.createElement('span');
-    sep.className = 'sep';
-    bar.append(sep);
     if (mode === 'edit') {
       const note = iconButton('note', hasNote ? 'Edit note' : 'Add note');
       note.classList.toggle('on', hasNote);
-      bar.append(note, iconButton('copy', 'Copy text'), iconButton('delete', 'Remove highlight'));
+      bar.append(
+        note,
+        iconButton('copy', 'Copy text'),
+        iconButton('delete', bookmark ? 'Remove bookmark' : 'Remove highlight')
+      );
     } else {
-      bar.append(iconButton('note', 'Highlight and add a note'));
+      bar.append(
+        iconButton('note', 'Highlight and add a note'),
+        iconButton('bookmark', 'Bookmark this line (one per page)')
+      );
     }
     bar.hidden = false;
     place(rect);

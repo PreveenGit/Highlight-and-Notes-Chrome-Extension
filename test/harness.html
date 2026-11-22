@@ -179,6 +179,18 @@
         eq(marks.some((m) => m.hasAttribute('title') || m.classList.contains('hl-note-badge')), false, 'cleared');
       });
 
+      test('setBookmark clears the fill and puts the ribbon on the first mark only', () => {
+        const before = setup(CROSS).text;
+        marker.wrapRange(rangeOver('lo', 'Sec'), 'b', 'yellow');
+        marker.setBookmark('b');
+        const marks = marker.getMarks('b');
+        eq(marks.every((m) => m.classList.contains('hl-bookmark')), true, 'bookmark class on every mark');
+        eq(marks.every((m) => m.style.getPropertyValue('background-color') === 'transparent'), true, 'no fill');
+        eq(marks.filter((m) => m.classList.contains('hl-bookmark-start')).length, 1, 'one ribbon');
+        eq(marks[0].classList.contains('hl-bookmark-start'), true, 'ribbon on first mark');
+        eq(anchor.buildIndex(fixture).text, before, 'page text unchanged');
+      });
+
       test('page text is unchanged by marks', () => {
         const before = setup(CROSS).text;
         marker.wrapRange(rangeOver('Hello', 'here'), 'a', 'yellow');
@@ -274,6 +286,16 @@
         eq(ids(HL.data.filterAndSort(pages, { query: 'quick essay' }).timeline.map((t) => t.highlight)), 'f1', 'text + note');
       });
 
+      test('bookmarks: left out by color filters, marked in Markdown', () => {
+        const pages = HL.data.toPages(STORAGE);
+        pages[0].highlights = [...pages[0].highlights, { ...hl('bm', 'yellow', 'Resume here', 4 * DAY, 90), bookmark: true }];
+        eq(ids(HL.data.filterAndSort(pages, {}).timeline.map((t) => t.highlight)).includes('bm'), true, 'shown without a filter');
+        eq(ids(HL.data.filterAndSort(pages, { colors: ['yellow'] }).timeline.map((t) => t.highlight)).includes('bm'), false, 'hidden by color filter');
+        eq(ids(HL.data.filterAndSort(pages, { query: 'resume' }).timeline.map((t) => t.highlight)), 'bm', 'found by search');
+        const md = HL.data.toMarkdown([{ title: 'P', url: 'https://x.test/', highlights: [{ text: 'Resume here', bookmark: true }] }]);
+        eq(md, '## [P](https://x.test/)\n\n> 🔖 Resume here\n', 'markdown');
+      });
+
       test('withNote sets, trims and removes a note', () => {
         const base = hl('a', 'pink', 'A', 1);
         eq(HL.withNote(base, '  hi  ').note, 'hi', 'trimmed');
@@ -341,6 +363,27 @@
         eq('note' in n3, false, 'blank note dropped');
         const round = HL.data.parseBackup(JSON.stringify(HL.data.toBackup(pages)));
         eq(round[0].highlights[0].note, 'keep me', 'round trip');
+      });
+
+      test('backup keeps bookmarks and ignores bad bookmark values', () => {
+        const pages = HL.data.parseBackup(
+          JSON.stringify({
+            format: 'highlight-backup',
+            version: 1,
+            pages: [
+              {
+                url: 'https://a.test/',
+                highlights: [
+                  { id: 'b1', quote: { exact: 'a' }, bookmark: true },
+                  { id: 'b2', quote: { exact: 'b' }, bookmark: 'yes' }
+                ]
+              }
+            ]
+          })
+        );
+        const [b1, b2] = pages[0].highlights;
+        eq(b1.bookmark, true, 'bookmark kept');
+        eq('bookmark' in b2, false, 'non-boolean dropped');
       });
 
       test('merging keeps existing highlights and skips duplicates', () => {

@@ -242,9 +242,10 @@
     li.dataset.key = page.key;
     li.dataset.id = h.id;
     li.classList.toggle('orphan', orphan);
+    li.classList.toggle('bookmark', !!h.bookmark);
 
     const bar = el('span', 'bar');
-    bar.style.background = HL.COLORS[h.color] || HL.COLORS.yellow;
+    bar.style.background = h.bookmark ? 'var(--accent)' : HL.COLORS[h.color] || HL.COLORS.yellow;
 
     const terms = HL.data.searchTerms(state.query);
     const note = HL.noteOf(h);
@@ -265,6 +266,7 @@
     }
     const meta = el('span', 'meta');
     meta.textContent = [
+      h.bookmark ? 'Bookmark' : '',
       showPage ? page.title : '',
       showPage ? page.site : '',
       orphan ? 'Not found on the page right now' : ago(h.createdAt)
@@ -283,9 +285,9 @@
     noteButton.classList.toggle('on', !!note);
     actions.append(
       noteButton,
-      iconButton('palette', 'Change color', 'pick'),
+      ...(h.bookmark ? [] : [iconButton('palette', 'Change color', 'pick')]), // bookmarks have no color
       iconButton('copy', 'Copy text', 'copy'),
-      iconButton('delete', 'Delete highlight', 'delete')
+      iconButton('delete', h.bookmark ? 'Delete bookmark' : 'Delete highlight', 'delete')
     );
 
     const swatches = el('div', 'swatches');

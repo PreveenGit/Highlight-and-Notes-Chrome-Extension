@@ -1,5 +1,6 @@
 // Highlights for the current page, kept in chrome.storage.local under one key per page:
-//   "hl:<url>" -> { url, title, highlights: [{ id, color, text, quote, position, createdAt, note? }] }
+//   "hl:<url>" -> { url, title, highlights: [{ id, color, text, quote, position, createdAt, note?, bookmark? }] }
+// A bookmark is a highlight with bookmark: true, at most one per page.
 //
 // The in-memory list changes immediately so the page and the store never disagree.
 // Writes re-read storage first (HL.mutatePage), so another tab on the same URL is

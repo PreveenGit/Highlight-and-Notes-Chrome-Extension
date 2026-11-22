@@ -6,6 +6,8 @@
   const MARK_CLASS = 'hl-mark';
   const FLASH_CLASS = 'hl-flash';
   const NOTE_CLASS = 'hl-note-badge';
+  const BOOKMARK_CLASS = 'hl-bookmark';
+  const BOOKMARK_START_CLASS = 'hl-bookmark-start';
   const SKIP_SELECTOR = 'script, style, noscript, template, textarea, input, select, option';
 
   function selector(id) {
@@ -109,6 +111,17 @@
     getMarks(id).forEach((mark) => paint(mark, color));
   }
 
+  // Shows a highlight as a bookmark: no fill color, an underline, and a ribbon
+  // (CSS ::before) at the start of its first mark.
+  function setBookmark(id) {
+    const marks = getMarks(id);
+    marks.forEach((mark, i) => {
+      mark.classList.add(BOOKMARK_CLASS);
+      mark.classList.toggle(BOOKMARK_START_CLASS, i === 0);
+      mark.style.setProperty('background-color', 'transparent', 'important');
+    });
+  }
+
   // Shows a note as a hover tooltip on every mark and a badge after the last one.
   // The badge is a CSS ::after, so the page text (and the anchor index) is unchanged.
   function setNote(id, note) {
@@ -135,5 +148,5 @@
     return true;
   }
 
-  HL.marker = { MARK_CLASS, wrapRange, unwrap, unwrapAll, recolor, setNote, flash, getMarks, exists, first };
+  HL.marker = { MARK_CLASS, wrapRange, unwrap, unwrapAll, recolor, setNote, setBookmark, flash, getMarks, exists, first };
 })();

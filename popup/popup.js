@@ -35,6 +35,12 @@
     $('copy').disabled = n === 0;
     $('clear').disabled = n === 0;
 
+    const bookmark = highlights.find((h) => h.bookmark);
+    $('jump').hidden = !bookmark;
+    $('jump').disabled = !!bookmark && !bookmark.found;
+    $('jump').title = bookmark && !bookmark.found ? "The bookmarked line isn't on the page right now" : '';
+    $('jump').dataset.id = bookmark ? bookmark.id : '';
+
     $('list').replaceChildren(
       ...highlights.map((h) => {
         const li = document.createElement('li');
@@ -42,8 +48,9 @@
         li.title = h.found ? 'Show on page' : '';
 
         const dot = document.createElement('span');
-        dot.className = 'dot';
-        dot.style.background = HL.COLORS[h.color] || HL.COLORS.yellow;
+        dot.className = h.bookmark ? 'dot bookmark' : 'dot';
+        if (h.bookmark) dot.title = 'Bookmark';
+        else dot.style.background = HL.COLORS[h.color] || HL.COLORS.yellow;
 
         const text = document.createElement('span');
         text.className = 'text';
@@ -83,6 +90,13 @@
       })
     );
   }
+
+  // Scrolls the page to its bookmark and closes the popup so the line is in view.
+  $('jump').addEventListener('click', async () => {
+    const res = await send({ type: HL.MSG.SCROLL_TO, id: $('jump').dataset.id }).catch(() => null);
+    if (res && res.ok) window.close();
+    else await refresh();
+  });
 
   $('copy').addEventListener('click', async () => {
     await navigator.clipboard.writeText(HL.data.toMarkdown([{ ...page, title: page.title || page.url }]));

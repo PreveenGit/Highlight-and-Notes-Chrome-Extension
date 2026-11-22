@@ -56,7 +56,8 @@
     for (const page of pages) {
       const pageText = `${page.title}\n${page.url}`.toLowerCase();
       const highlights = page.highlights.filter((h) => {
-        if (colorSet.size && !colorSet.has(h.color)) return false;
+        // A bookmark has no highlight color, so color filters leave it out.
+        if (colorSet.size && (h.bookmark || !colorSet.has(h.color))) return false;
         const own = `${h.text || ''}\n${HL.noteOf(h)}`.toLowerCase();
         return terms.every((t) => pageText.includes(t) || own.includes(t));
       });
@@ -89,7 +90,7 @@
     for (const page of pages) {
       lines.push(`## [${page.title.replace(/[[\]]/g, '\\$&')}](${page.url.replace(/[ ()]/g, encodeURIComponent)})`, '');
       for (const h of page.highlights) {
-        lines.push(`> ${String(h.text).replace(/\s+/g, ' ').trim()}`, '');
+        lines.push(`> ${h.bookmark ? '🔖 ' : ''}${String(h.text).replace(/\s+/g, ' ').trim()}`, '');
         const note = HL.noteOf(h);
         // Two trailing spaces keep the note's own line breaks in rendered Markdown.
         if (note) lines.push(`**Note:** ${note.split(/\r?\n/).map((l) => l.trimEnd()).join('  \n')}`, '');
@@ -155,7 +156,8 @@
         text: str(h.text) || h.quote.exact,
         quote: { exact: h.quote.exact, prefix: str(h.quote.prefix), suffix: str(h.quote.suffix) },
         position,
-        createdAt: Number.isFinite(h.createdAt) ? h.createdAt : Date.now()
+        createdAt: Number.isFinite(h.createdAt) ? h.createdAt : Date.now(),
+        ...(h.bookmark === true ? { bookmark: true } : {})
       },
       h.note
     );
