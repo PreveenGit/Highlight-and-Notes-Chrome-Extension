@@ -1,0 +1,36 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <title>Type-anywhere test page</title>
+    <style>
+      body { margin: 32px; font: 16px/1.6 system-ui, sans-serif; }
+      #composer { display: block; width: 420px; height: 60px; margin-top: 24px; }
+    </style>
+  </head>
+  <body>
+    <!-- Development only. Mimics sites such as chatgpt.com that move any keystroke typed
+         outside a text field into their own input box. Open with ?stub, select text,
+         add a note, and type: the text must land in the note box, not in #composer. -->
+    <h1>Type-anywhere test page</h1>
+    <p>Select this sentence, click the note button and type a note into the note box.</p>
+    <textarea id="composer" placeholder="The site's own input box"></textarea>
+
+    <script src="load-extension.js"></script>
+    <script>
+      // Capture-phase listener on window, like the real sites use. It is registered
+      // after the extension's scripts load, the same order as in Chrome, where the
+      // extension's document_start script runs before any page script.
+      function hijack(e) {
+        const t = e.target;
+        const editable = t instanceof HTMLInputElement || t instanceof HTMLTextAreaElement || t.isContentEditable;
+        if (!editable && e.key.length === 1 && !e.ctrlKey && !e.metaKey && !e.altKey) {
+          document.getElementById('composer').focus();
+        }
+      }
+      const register = () => window.addEventListener('keydown', hijack, true);
+      if (new URLSearchParams(location.search).has('stub')) document.addEventListener('hl-loaded', register);
+      else register();
+    </script>
+  </body>
+</html>

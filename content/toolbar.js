@@ -169,17 +169,12 @@
     noteArea.value = text;
     noteArea.placeholder = 'Add a note…';
     noteArea.setAttribute('aria-label', 'Note');
+    // content/guard.js normally stops these keys at the window, before the page sees
+    // them, and calls handleKey itself. These listeners are the fallback for when it
+    // isn't loaded.
     noteArea.addEventListener('keydown', (e) => {
-      // Events leave the shadow root looking like they came from <hl-toolbar>, so
-      // the page can't tell they are typing; stop them reaching its shortcuts.
       e.stopPropagation();
-      if (e.key === 'Escape') {
-        e.preventDefault();
-        onAction('note-cancel');
-      } else if (e.key === 'Enter' && (e.ctrlKey || e.metaKey)) {
-        e.preventDefault();
-        onAction('note-save', noteValue());
-      }
+      handleKey(e);
     });
     for (const type of ['keyup', 'keypress']) noteArea.addEventListener(type, (e) => e.stopPropagation());
 
@@ -202,6 +197,18 @@
 
   function noteValue() {
     return noteArea ? noteArea.value : '';
+  }
+
+  // The note editor's shortcuts: Escape cancels, Ctrl/Cmd+Enter saves.
+  function handleKey(e) {
+    if (!isEditingNote()) return;
+    if (e.key === 'Escape') {
+      e.preventDefault();
+      onAction('note-cancel');
+    } else if (e.key === 'Enter' && (e.ctrlKey || e.metaKey)) {
+      e.preventDefault();
+      onAction('note-save', noteValue());
+    }
   }
 
   function button(action, label) {
@@ -268,5 +275,5 @@
     return !!host && event.composedPath().includes(host);
   }
 
-  HL.toolbar = { init, show, showNote, hide, isOpen, isEditingNote, commitNote, owns };
+  HL.toolbar = { init, show, showNote, hide, isOpen, isEditingNote, commitNote, handleKey, owns };
 })();
