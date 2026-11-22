@@ -597,6 +597,7 @@
     let added = 0;
     let skipped = 0;
     const touched = new Set();
+    const bookmarkPages = new Set(); // pages where an older bookmark was dropped
     for (const page of incoming) {
       const known = pages.some((p) => p.key === page.key);
       await HL.mutatePage(
@@ -606,14 +607,17 @@
           added += result.added;
           skipped += result.skipped;
           if (result.added) touched.add(page.key);
+          if (result.droppedBookmarks) bookmarkPages.add(page.key);
           return result.list;
         },
         known ? undefined : { url: page.url, title: page.title }
       );
     }
+    const n = bookmarkPages.size;
     toast(
       `Added ${added} highlight${plural(added)} on ${touched.size} page${plural(touched.size)}` +
-        (skipped ? `, skipped ${skipped} already present.` : '.')
+        (skipped ? `, skipped ${skipped} already present.` : '.') +
+        (n ? ` Kept only the newest bookmark on ${n} page${plural(n)}.` : '')
     );
   }
 

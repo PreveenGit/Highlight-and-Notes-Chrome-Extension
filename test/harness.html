@@ -394,6 +394,23 @@
         eq(result.list[1].color, 'blue', 'existing entry wins');
         eq(result.added, 1, 'added');
         eq(result.skipped, 2, 'skipped');
+        eq(result.droppedBookmarks, 0, 'no bookmarks dropped');
+      });
+
+      test('merging keeps only the newest bookmark on a page', () => {
+        const bm = (id, createdAt) => ({ ...hl(id, 'yellow', id, createdAt), bookmark: true });
+        const existing = [hl('a', 'pink', 'A', 1), bm('old', 5)];
+
+        const newer = HL.data.mergeHighlights(existing, [bm('new', 9), hl('c', 'green', 'C', 3)]);
+        eq(ids(newer.list), 'a,new,c', 'newer incoming bookmark replaces the existing one');
+        eq(newer.added, 2, 'added');
+        eq(newer.droppedBookmarks, 1, 'dropped');
+
+        const older = HL.data.mergeHighlights(existing, [bm('older', 2)]);
+        eq(ids(older.list), 'a,old', 'older incoming bookmark is not added');
+        eq(older.added, 0, 'nothing added');
+        eq(older.skipped, 0, 'not counted as a duplicate');
+        eq(older.droppedBookmarks, 1, 'dropped');
       });
 
       test('diffHighlights finds added, removed and recolored', () => {

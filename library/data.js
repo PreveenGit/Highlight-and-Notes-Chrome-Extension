@@ -164,6 +164,10 @@
   }
 
   // Adds `incoming` highlights to `list`, skipping ids already there (existing ones win).
+  // A page has one bookmark, so if the merge leaves more than one, only the newest
+  // (by createdAt) stays, whether it was already there or came in.
+  // Returns { list, added, skipped, droppedBookmarks }: `added` counts incoming
+  // highlights that were kept, `skipped` the ones whose id was already there.
   function mergeHighlights(list, incoming) {
     const ids = new Set(list.map((h) => h.id));
     const added = [];
@@ -172,7 +176,21 @@
       ids.add(h.id);
       added.push(h);
     }
-    return { list: [...list, ...added], added: added.length, skipped: incoming.length - added.length };
+    const merged = keepNewestBookmark([...list, ...added]);
+    const kept = new Set(merged);
+    return {
+      list: merged,
+      added: added.filter((h) => kept.has(h)).length,
+      skipped: incoming.length - added.length,
+      droppedBookmarks: list.length + added.length - merged.length
+    };
+  }
+
+  function keepNewestBookmark(list) {
+    const bookmarks = list.filter((h) => h.bookmark);
+    if (bookmarks.length < 2) return list;
+    const newest = bookmarks.reduce((a, b) => ((b.createdAt || 0) > (a.createdAt || 0) ? b : a));
+    return list.filter((h) => !h.bookmark || h === newest);
   }
 
   HL.data = { toPages, siteOf, filterAndSort, searchTerms, toMarkdown, toBackup, parseBackup, mergeHighlights };
