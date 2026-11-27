@@ -1,6 +1,7 @@
 // Highlights for the current page, kept in chrome.storage.local under one key per page:
-//   "hl:<url>" -> { url, title, highlights: [{ id, color, text, quote, position, createdAt, note?, bookmark? }] }
-// A bookmark is a highlight with bookmark: true, at most one per page.
+//   "hl:<url>" -> { url, title, highlights: [{ id, color, text, quote, position, createdAt, note?, bookmark?, learn? }] }
+// A bookmark is a highlight with bookmark: true, at most one per page. learn: true
+// marks a highlight the user wants to come back to and learn more about.
 //
 // The in-memory list changes immediately so the page and the store never disagree.
 // Writes re-read storage first (HL.mutatePage), so another tab on the same URL is
@@ -47,7 +48,8 @@
         const next = stored ? stored.highlights : [];
         const diff = HL.diffHighlights(highlights, next);
         highlights = next;
-        if (diff.added.length || diff.removed.length || diff.recolored.length || diff.noted.length) onExternal(diff);
+        const changed = diff.added.length || diff.removed.length || diff.recolored.length || diff.noted.length || diff.flagged.length;
+        if (changed) onExternal(diff);
       })
       .catch((err) => console.warn('[Highlight] could not sync:', err));
   }
@@ -64,6 +66,7 @@
     add: (highlight) => mutate((list) => [...list.filter((h) => h.id !== highlight.id), highlight]),
     update: (id, patch) => mutate((list) => list.map((h) => (h.id === id ? { ...h, ...patch } : h))),
     setNote: (id, note) => mutate((list) => list.map((h) => (h.id === id ? HL.withNote(h, note) : h))),
+    setLearn: (id, on) => mutate((list) => list.map((h) => (h.id === id ? HL.withLearn(h, on) : h))),
     remove: (id) => mutate((list) => list.filter((h) => h.id !== id)),
     clear: () => mutate(() => []),
     onExternalChange: (fn) => {

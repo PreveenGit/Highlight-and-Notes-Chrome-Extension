@@ -136,6 +136,20 @@ section p {
   border: 1px solid rgba(0, 0, 0, 0.2);
 }
 
+/* Marked "learn more": a small "?" after the text, as on the page. */
+.learn-badge {
+  display: inline-block;
+  width: 14px;
+  height: 14px;
+  margin-left: 5px;
+  border-radius: 50%;
+  background: var(--learn);
+  color: var(--bg);
+  font: 700 10px/14px system-ui, sans-serif;
+  text-align: center;
+  vertical-align: 1px;
+}
+
 /* A bookmark: a ribbon instead of a color dot. */
 .dot.bookmark {
   width: 10px;

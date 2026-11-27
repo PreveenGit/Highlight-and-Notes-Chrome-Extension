@@ -63,8 +63,15 @@
       added: newList.filter((h) => !before.has(h.id)),
       removed: oldList.filter((h) => !after.has(h.id)),
       recolored: kept.filter((h) => before.get(h.id).color !== h.color),
-      noted: kept.filter((h) => HL.noteOf(before.get(h.id)) !== HL.noteOf(h))
+      noted: kept.filter((h) => HL.noteOf(before.get(h.id)) !== HL.noteOf(h)),
+      flagged: kept.filter((h) => !!before.get(h.id).learn !== !!h.learn)
     };
+  };
+
+  // Copy of `h` marked (or no longer marked) "learn more"; unmarked removes the field.
+  HL.withLearn = function withLearn(h, on) {
+    const { learn: _old, ...rest } = h;
+    return on ? { ...rest, learn: true } : rest;
   };
 
   // A highlight's note, or '' when it has none. Notes are optional plain text.

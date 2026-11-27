@@ -1,12 +1,14 @@
-// Floating toolbar shown next to selected text (pick a color, add a note, or
-// bookmark the line) or a clicked highlight (recolor, note, copy, delete). It also
-// hosts the note editor.
+// Floating toolbar shown next to selected text (pick a color, add a note, bookmark
+// the line, or mark it to learn more) or a clicked highlight (recolor, note, learn
+// more / got it, copy, delete). It also hosts the note editor.
 // It lives in a closed Shadow DOM so page CSS can't reach it.
 (() => {
   const HL = globalThis.HL;
 
   const ICONS = {
     bookmark: 'M17 3H7c-1.1 0-1.99.9-1.99 2L5 21l7-3 7 3V5c0-1.1-.9-2-2-2z',
+    learn: 'M5 13.18v4L12 21l7-3.82v-4L12 17l-7-3.82zM12 3 1 9l11 6 9-4.91V17h2V9L12 3z',
+    check: 'M9 16.17 4.83 12l-1.42 1.41L9 19 21 7l-1.41-1.41z',
     note: 'M21.99 4c0-1.1-.89-2-1.99-2H4c-1.1 0-2 .9-2 2v12c0 1.1.9 2 2 2h14l4 4-.01-18zM18 14H6v-2h12v2zm0-3H6V9h12v2zm0-3H6V6h12v2z',
     copy: 'M16 1H4c-1.1 0-2 .9-2 2v14h2V3h12V1zm3 4H8c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h11c1.1 0 2-.9 2-2V7c0-1.1-.9-2-2-2zm0 16H8V7h11v14z',
     delete: 'M6 19c0 1.1.9 2 2 2h8c1.1 0 2-.9 2-2V7H6v12zM19 4h-3.5l-1-1h-5l-1 1H5v2h14V4z'
@@ -54,6 +56,7 @@
     .icon:hover { background: #3c4043; }
     .icon.on { color: #fdd663; }
     .icon[data-action='bookmark'] { color: #8ab4f8; }
+    .icon[data-action='learn'] { color: #d7aefb; }
     .icon svg { width: 16px; height: 16px; fill: currentColor; }
     textarea {
       all: unset;
@@ -133,11 +136,11 @@
     document.documentElement.append(host);
   }
 
-  // mode "create": color swatches, a note button and a bookmark button for the
+  // mode "create": color swatches, plus note, bookmark and learn-more buttons for the
   //   current selection.
-  // mode "edit": swatches to recolor plus note, copy and delete for a clicked
-  //   highlight. A clicked bookmark has no color, so it gets no swatches.
-  function show(rect, { mode, color, hasNote = false, bookmark = false }) {
+  // mode "edit": swatches to recolor plus note, learn more / got it, copy and delete
+  //   for a clicked highlight. A clicked bookmark has no color, so no swatches.
+  function show(rect, { mode, color, hasNote = false, bookmark = false, learn = false }) {
     ensure();
     noteArea = null;
     bar.className = 'bar';
@@ -159,13 +162,17 @@
       note.classList.toggle('on', hasNote);
       bar.append(
         note,
+        learn
+          ? iconButton('learn', 'Got it: clear Learn more', 'check')
+          : iconButton('learn', 'Mark to learn more'),
         iconButton('copy', 'Copy text'),
         iconButton('delete', bookmark ? 'Remove bookmark' : 'Remove highlight')
       );
     } else {
       bar.append(
         iconButton('note', 'Highlight and add a note'),
-        iconButton('bookmark', 'Bookmark this line (one per page)')
+        iconButton('bookmark', 'Bookmark this line (one per page)'),
+        iconButton('learn', 'Highlight to learn more')
       );
     }
     bar.hidden = false;
@@ -174,14 +181,14 @@
 
   // The note editor: a text box with Save and Cancel. Ctrl/Cmd+Enter saves and
   // Escape cancels.
-  function showNote(rect, { text = '' } = {}) {
+  function showNote(rect, { text = '', placeholder = 'Add a note…' } = {}) {
     ensure();
     bar.className = 'bar note-mode';
     bar.replaceChildren();
 
     noteArea = document.createElement('textarea');
     noteArea.value = text;
-    noteArea.placeholder = 'Add a note…';
+    noteArea.placeholder = placeholder;
     noteArea.setAttribute('aria-label', 'Note');
     // content/guard.js normally stops these keys at the window, before the page sees
     // them, and calls handleKey itself. These listeners are the fallback for when it
@@ -234,13 +241,13 @@
     return el;
   }
 
-  function iconButton(action, label) {
+  function iconButton(action, label, icon = action) {
     const el = button(action, label);
     el.className = 'icon';
     const svg = document.createElementNS('http://www.w3.org/2000/svg', 'svg');
     svg.setAttribute('viewBox', '0 0 24 24');
     const path = document.createElementNS('http://www.w3.org/2000/svg', 'path');
-    path.setAttribute('d', ICONS[action]);
+    path.setAttribute('d', ICONS[icon]);
     svg.append(path);
     el.append(svg);
     return el;

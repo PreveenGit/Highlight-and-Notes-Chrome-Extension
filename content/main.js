@@ -7,6 +7,7 @@
 
   const FAST_RETRY_MS = 10000; // retry restoring aggressively for this long after load
   const SLOW_RETRY_MS = 3000; // after that, at most this often
+  const LEARN_PROMPT = 'What do you want to learn about this?'; // note box placeholder
 
   let settings = { ...HL.DEFAULT_SETTINGS };
   let currentHref = location.href;
@@ -54,6 +55,7 @@
       if (range && HL.marker.wrapRange(range, h.id, h.color).length) {
         unresolved.delete(h.id);
         if (h.bookmark) HL.marker.setBookmark(h.id);
+        if (h.learn) HL.marker.setLearn(h.id, true);
         HL.marker.setNote(h.id, h.note);
       }
     }
@@ -100,7 +102,8 @@
   }
 
   // Returns the new highlight's id, or null if nothing could be highlighted.
-  // `extra` is merged into the saved record ({ bookmark: true } for a bookmark).
+  // `extra` is merged into the saved record ({ bookmark: true } for a bookmark,
+  // { learn: true } for "learn more").
   function highlightRange(range, color, extra = {}) {
     if (!range || range.collapsed) return null;
     const index = HL.anchor.buildIndex();
@@ -115,6 +118,7 @@
     const id = newId();
     if (!target || !HL.marker.wrapRange(target, id, color).length) return null;
     if (extra.bookmark) HL.marker.setBookmark(id);
+    if (extra.learn) HL.marker.setLearn(id, true);
     sel.removeAllRanges();
     HL.store.add({ id, color, text: text || anchor.quote.exact, ...anchor, createdAt: Date.now(), ...extra });
     return id;
@@ -160,9 +164,38 @@
     HL.marker.setNote(id, note);
   }
 
+  function setLearn(id, on) {
+    HL.store.setLearn(id, on);
+    HL.marker.setLearn(id, on);
+  }
+
+  // "Learn more" from the toolbar. On a selection: highlight it (default color) marked
+  // to learn more and ask what to learn. On a clicked highlight: mark it, and ask if
+  // it has no note yet; if it is already marked, "Got it" clears the mark.
+  // Returns true when the note editor is now open (so activeId must be kept).
+  function toggleLearn() {
+    if (!activeId) {
+      activeId = highlightRange(pendingRange, settings.defaultColor, { learn: true });
+      pendingRange = null;
+      if (!activeId) return false;
+      openNoteEditor(LEARN_PROMPT);
+      return true;
+    }
+    const saved = HL.store.get(activeId);
+    if (!saved) return false;
+    if (saved.learn) {
+      setLearn(activeId, false);
+      return false;
+    }
+    setLearn(activeId, true);
+    if (HL.noteOf(saved)) return false;
+    openNoteEditor(LEARN_PROMPT);
+    return true;
+  }
+
   // Opens the note editor on the clicked highlight, or first highlights the
   // selection (in the default color) when the toolbar was shown for one.
-  function openNoteEditor() {
+  function openNoteEditor(placeholder) {
     if (!activeId) {
       activeId = highlightRange(pendingRange, settings.defaultColor);
       pendingRange = null;
@@ -174,12 +207,12 @@
       return;
     }
     const rect = Array.from(marks[0].getClientRects()).find((r) => r.width && r.height) || marks[0].getBoundingClientRect();
-    HL.toolbar.showNote(rect, { text: HL.noteOf(HL.store.get(activeId)) });
+    HL.toolbar.showNote(rect, { text: HL.noteOf(HL.store.get(activeId)), placeholder });
   }
 
   // Highlights changed outside this tab (the library, the popup in another tab,
   // an import, or the same page open twice).
-  function applyExternalChange({ added, removed, recolored, noted }) {
+  function applyExternalChange({ added, removed, recolored, noted, flagged }) {
     for (const h of removed) {
       unresolved.delete(h.id);
       HL.marker.unwrap(h.id);
@@ -187,6 +220,7 @@
     }
     for (const h of recolored) if (!h.bookmark) HL.marker.recolor(h.id, h.color);
     for (const h of noted) HL.marker.setNote(h.id, h.note);
+    for (const h of flagged) HL.marker.setLearn(h.id, !!h.learn);
     if (added.length) {
       added.forEach((h) => unresolved.add(h.id));
       fastUntil = Date.now() + FAST_RETRY_MS;
@@ -207,6 +241,7 @@
       openNoteEditor(); // keeps activeId for the editor's Save
       return;
     }
+    if (action === 'learn' && toggleLearn()) return; // note editor open: keep activeId
     if (action === 'color') {
       if (activeId) recolor(activeId, value);
       else highlightRange(pendingRange, value);
@@ -276,7 +311,8 @@
       mode: 'edit',
       color: mark.dataset.hlColor,
       hasNote: !!HL.noteOf(saved),
-      bookmark: !!(saved && saved.bookmark)
+      bookmark: !!(saved && saved.bookmark),
+      learn: !!(saved && saved.learn)
     });
   }
 
@@ -387,6 +423,7 @@
       text: h.text,
       note: HL.noteOf(h) || undefined,
       bookmark: h.bookmark || undefined,
+      learn: h.learn || undefined,
       createdAt: h.createdAt,
       found: !!mark
     }));

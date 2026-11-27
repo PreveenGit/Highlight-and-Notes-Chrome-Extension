@@ -330,6 +330,18 @@ main {
   color: var(--accent);
 }
 
+/* Marked "learn more". */
+.learn-tag {
+  margin-right: 6px;
+  color: var(--learn);
+  font-weight: 600;
+}
+
+.item-actions .icon-btn[data-action='learn'],
+.item-actions .icon-btn[data-action='learn'].on {
+  color: var(--learn);
+}
+
 .bar {
   flex: none;
   width: 4px;

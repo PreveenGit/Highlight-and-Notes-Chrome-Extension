@@ -5,9 +5,12 @@
   const HL = globalThis.HL;
   const $ = (id) => document.getElementById(id);
   const TIMELINE_PAGE = 200;
+  const LEARN_PROMPT = 'What do you want to learn about this?'; // note box placeholder
 
   const ICONS = {
     chevron: 'M16.59 8.59 12 13.17 7.41 8.59 6 10l6 6 6-6z',
+    learn: 'M5 13.18v4L12 21l7-3.82v-4L12 17l-7-3.82zM12 3 1 9l11 6 9-4.91V17h2V9L12 3z',
+    check: 'M9 16.17 4.83 12l-1.42 1.41L9 19 21 7l-1.41-1.41z',
     note: 'M21.99 4c0-1.1-.89-2-1.99-2H4c-1.1 0-2 .9-2 2v12c0 1.1.9 2 2 2h14l4 4-.01-18zM18 14H6v-2h12v2zm0-3H6V9h12v2zm0-3H6V6h12v2z',
     palette:
       'M12 3a9 9 0 0 0 0 18c.83 0 1.5-.67 1.5-1.5 0-.39-.15-.74-.39-1.01-.23-.26-.38-.61-.38-.99 0-.83.67-1.5 1.5-1.5H16c2.76 0 5-2.24 5-5 0-4.42-4.03-8-9-8zm-5.5 9a1.5 1.5 0 1 1 0-3 1.5 1.5 0 0 1 0 3zm3-4a1.5 1.5 0 1 1 0-3 1.5 1.5 0 0 1 0 3zm5 0a1.5 1.5 0 1 1 0-3 1.5 1.5 0 0 1 0 3zm3 4a1.5 1.5 0 1 1 0-3 1.5 1.5 0 0 1 0 3z',
@@ -82,8 +85,9 @@
     return pages.find((p) => p.key === key);
   }
 
+  // In the "To learn" view only highlights marked "learn more" are shown (and exported).
   function filters() {
-    return { query: state.query, colors: [...state.colors], sort: state.sort };
+    return { query: state.query, colors: [...state.colors], sort: state.sort, learn: state.view === 'learn' };
   }
 
   // The page as currently shown, i.e. with search and color filters applied.
@@ -101,7 +105,13 @@
       b.setAttribute('aria-selected', String(b.dataset.view === state.view));
     }
     $('sort').hidden = state.view === 'page';
-    const view = state.view === 'page' ? renderCurrent() : state.view === 'pages' ? renderPages() : renderTimeline();
+    const toLearn = learnCount();
+    document.querySelector('.views [data-view="learn"]').textContent = toLearn ? `To learn (${toLearn})` : 'To learn';
+    const view =
+      state.view === 'page' ? renderCurrent()
+      : state.view === 'pages' ? renderPages()
+      : state.view === 'learn' ? renderLearn()
+      : renderTimeline();
     const editor = editorState();
     $('content').replaceChildren(...view);
     restoreEditor(editor);
@@ -155,6 +165,28 @@
     if (!pages.length) return [empty('No highlights yet. Select text on any page and pick a color.')];
     const { timeline } = HL.data.filterAndSort(pages, filters());
     if (!timeline.length) return [empty('No highlights match your search.')];
+    return timelineList(timeline);
+  }
+
+  // Every highlight marked "learn more", on any page, as a timeline.
+  function renderLearn() {
+    if (!learnCount()) {
+      return [
+        empty(
+          'Nothing marked to learn yet. Select text and click the graduation-cap button in the toolbar, or click a highlight and mark it to learn more.'
+        )
+      ];
+    }
+    const { timeline } = HL.data.filterAndSort(pages, filters());
+    if (!timeline.length) return [empty('Nothing to learn matches your search.')];
+    return timelineList(timeline);
+  }
+
+  function learnCount() {
+    return pages.reduce((n, p) => n + p.highlights.filter((h) => h.learn).length, 0);
+  }
+
+  function timelineList(timeline) {
     const list = el('ul', 'items');
     list.append(...timeline.slice(0, state.timelineLimit).map(({ highlight, page }) => item(highlight, page, true)));
     const box = el('div', 'timeline');
@@ -265,14 +297,21 @@
       main.append(noteEl);
     }
     const meta = el('span', 'meta');
-    meta.textContent = [
-      h.bookmark ? 'Bookmark' : '',
-      showPage ? page.title : '',
-      showPage ? page.site : '',
-      orphan ? 'Not found on the page right now' : ago(h.createdAt)
-    ]
-      .filter(Boolean)
-      .join(' · ');
+    if (h.learn) {
+      const tag = el('span', 'learn-tag');
+      tag.textContent = 'Learn more';
+      meta.append(tag);
+    }
+    meta.append(
+      [
+        h.bookmark ? 'Bookmark' : '',
+        showPage ? page.title : '',
+        showPage ? page.site : '',
+        orphan ? 'Not found on the page right now' : ago(h.createdAt)
+      ]
+        .filter(Boolean)
+        .join(' · ')
+    );
     main.append(meta);
 
     // The editor sits outside .item-main, which is itself a button.
@@ -283,8 +322,13 @@
     const actions = el('div', 'item-actions');
     const noteButton = iconButton('note', note ? 'Edit note' : 'Add note', 'note');
     noteButton.classList.toggle('on', !!note);
+    const learnButton = h.learn
+      ? iconButton('check', 'Got it: clear Learn more', 'learn')
+      : iconButton('learn', 'Mark to learn more', 'learn');
+    learnButton.classList.toggle('on', !!h.learn);
     actions.append(
       noteButton,
+      learnButton,
       ...(h.bookmark ? [] : [iconButton('palette', 'Change color', 'pick')]), // bookmarks have no color
       iconButton('copy', 'Copy text', 'copy'),
       iconButton('delete', h.bookmark ? 'Delete bookmark' : 'Delete highlight', 'delete')
@@ -313,7 +357,7 @@
     const area = el('textarea');
     area.value = state.editing.draft;
     area.rows = 3;
-    area.placeholder = 'Add a note…';
+    area.placeholder = state.editing.placeholder || 'Add a note…';
     area.setAttribute('aria-label', 'Note');
     area.addEventListener('input', () => {
       if (state.editing) state.editing.draft = area.value;
@@ -477,6 +521,24 @@
         render();
         break;
       }
+      case 'learn': {
+        const page = findPage(key);
+        const h = page && page.highlights.find((x) => x.id === id);
+        if (!h) break;
+        if (h.learn) {
+          await updateHighlight(key, id, (x) => HL.withLearn(x, false));
+          toast('Marked as understood', () => updateHighlight(key, id, (x) => HL.withLearn(x, true)));
+          break;
+        }
+        await updateHighlight(key, id, (x) => HL.withLearn(x, true));
+        if (!HL.noteOf(h)) {
+          // Ask what to learn: open the note box with a prompt.
+          if (state.editing) await saveNote();
+          state.editing = { key, id, draft: '', placeholder: LEARN_PROMPT };
+          render();
+        }
+        break;
+      }
       case 'note-save':
         await saveNote();
         break;
@@ -528,12 +590,17 @@
     const edit = state.editing;
     if (!edit) return;
     state.editing = null;
-    const change = (h) => (h.id === edit.id ? HL.withNote(h, edit.draft) : h);
-    await HL.mutatePage(edit.key, (list) => list.map(change));
-    // Show it now rather than after the storage-change reload.
-    const stored = pages.find((p) => p.key === edit.key);
+    await updateHighlight(edit.key, edit.id, (h) => HL.withNote(h, edit.draft));
+  }
+
+  // Saves a change to one highlight, then shows it right away rather than after the
+  // storage-change reload.
+  async function updateHighlight(key, id, update) {
+    const change = (h) => (h.id === id ? update(h) : h);
+    await HL.mutatePage(key, (list) => list.map(change));
+    const stored = pages.find((p) => p.key === key);
     if (stored) stored.highlights = stored.highlights.map(change);
-    if (isCurrent(edit.key)) current.highlights = current.highlights.map(change);
+    if (isCurrent(key)) current.highlights = current.highlights.map(change);
     render();
   }
 
@@ -577,7 +644,7 @@
     const source = state.view === 'page' ? (isCurrentAvailable() ? [currentPage()] : []) : pages;
     const shown = HL.data.filterAndSort(source, filters()).pages;
     if (!shown.length) return toast('Nothing to export.');
-    const filtered = state.query.trim() || state.colors.size ? ' (filtered)' : '';
+    const filtered = state.view === 'learn' ? ' (to learn)' : state.query.trim() || state.colors.size ? ' (filtered)' : '';
     const header = `# Highlights\n\nExported ${new Date().toLocaleString()}${filtered}\n\n`;
     download(`highlights-${today()}.md`, header + HL.data.toMarkdown(shown), 'text/markdown');
   }

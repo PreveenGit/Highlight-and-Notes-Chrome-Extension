@@ -57,6 +57,26 @@ mark.hl-mark.hl-note-badge::after {
   box-shadow: 0 0 0 1.5px rgba(255, 255, 255, 0.9) !important;
 }
 
+/* Marked "learn more": a purple "?" after the last piece (set by marker.js). It comes
+   after the note badge so it wins when a highlight has both; the note stays in the
+   tooltip. Generated text isn't page text, so anchoring and copying ignore it. */
+mark.hl-mark.hl-learn-badge::after {
+  content: '?' !important;
+  display: inline-block !important;
+  width: 14px !important;
+  height: 14px !important;
+  margin: 0 1px 0 3px !important;
+  vertical-align: 0.25em !important;
+  border-radius: 50% !important;
+  background: #8430ce !important;
+  box-shadow: 0 0 0 1.5px rgba(255, 255, 255, 0.9) !important;
+  color: #fff !important;
+  font: 700 10px/14px system-ui, sans-serif !important;
+  text-align: center !important;
+  text-indent: 0 !important;
+  letter-spacing: 0 !important;
+}
+
 mark.hl-mark.hl-flash {
   animation: hl-flash 0.6s ease-in-out 3;
 }

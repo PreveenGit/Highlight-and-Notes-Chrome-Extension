@@ -10,6 +10,7 @@
   --accent: #1a73e8;
   --danger: #d93025;
   --hit: #fde293;
+  --learn: #8430ce;
 }
 
 @media (prefers-color-scheme: dark) {
@@ -23,5 +24,6 @@
     --accent: #8ab4f8;
     --danger: #f28b82;
     --hit: #5c4d0f;
+    --learn: #d7aefb;
   }
 }

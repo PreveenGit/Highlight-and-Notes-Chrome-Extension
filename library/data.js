@@ -47,15 +47,17 @@
   //   query:  every word must appear in the highlight text, its note, page title or URL
   //   colors: color names to keep (empty = all)
   //   sort:   newest | oldest | site | most
+  //   learn:  true to keep only highlights marked "learn more"
   // Returns { pages, timeline, count }. Pages keep only their matching highlights,
   // in page order; the timeline is every match, newest first (or oldest first).
-  function filterAndSort(pages, { query = '', colors = [], sort = 'newest' } = {}) {
+  function filterAndSort(pages, { query = '', colors = [], sort = 'newest', learn = false } = {}) {
     const terms = searchTerms(query);
     const colorSet = new Set(colors);
     const out = [];
     for (const page of pages) {
       const pageText = `${page.title}\n${page.url}`.toLowerCase();
       const highlights = page.highlights.filter((h) => {
+        if (learn && !h.learn) return false;
         // A bookmark has no highlight color, so color filters leave it out.
         if (colorSet.size && (h.bookmark || !colorSet.has(h.color))) return false;
         const own = `${h.text || ''}\n${HL.noteOf(h)}`.toLowerCase();
@@ -90,7 +92,8 @@
     for (const page of pages) {
       lines.push(`## [${page.title.replace(/[[\]]/g, '\\$&')}](${page.url.replace(/[ ()]/g, encodeURIComponent)})`, '');
       for (const h of page.highlights) {
-        lines.push(`> ${h.bookmark ? '🔖 ' : ''}${String(h.text).replace(/\s+/g, ' ').trim()}`, '');
+        const marks = (h.bookmark ? '🔖 ' : '') + (h.learn ? '❓ ' : '');
+        lines.push(`> ${marks}${String(h.text).replace(/\s+/g, ' ').trim()}`, '');
         const note = HL.noteOf(h);
         // Two trailing spaces keep the note's own line breaks in rendered Markdown.
         if (note) lines.push(`**Note:** ${note.split(/\r?\n/).map((l) => l.trimEnd()).join('  \n')}`, '');
@@ -157,7 +160,8 @@
         quote: { exact: h.quote.exact, prefix: str(h.quote.prefix), suffix: str(h.quote.suffix) },
         position,
         createdAt: Number.isFinite(h.createdAt) ? h.createdAt : Date.now(),
-        ...(h.bookmark === true ? { bookmark: true } : {})
+        ...(h.bookmark === true ? { bookmark: true } : {}),
+        ...(h.learn === true ? { learn: true } : {})
       },
       h.note
     );

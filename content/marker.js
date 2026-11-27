@@ -8,6 +8,7 @@
   const NOTE_CLASS = 'hl-note-badge';
   const BOOKMARK_CLASS = 'hl-bookmark';
   const BOOKMARK_START_CLASS = 'hl-bookmark-start';
+  const LEARN_CLASS = 'hl-learn-badge';
   const SKIP_SELECTOR = 'script, style, noscript, template, textarea, input, select, option';
 
   function selector(id) {
@@ -122,6 +123,13 @@
     });
   }
 
+  // Marks a highlight "learn more" with a "?" badge (CSS ::after) after its last mark,
+  // the spot the note badge uses; the "?" takes priority when both apply.
+  function setLearn(id, on) {
+    const marks = getMarks(id);
+    marks.forEach((mark, i) => mark.classList.toggle(LEARN_CLASS, !!on && i === marks.length - 1));
+  }
+
   // Shows a note as a hover tooltip on every mark and a badge after the last one.
   // The badge is a CSS ::after, so the page text (and the anchor index) is unchanged.
   function setNote(id, note) {
@@ -148,5 +156,5 @@
     return true;
   }
 
-  HL.marker = { MARK_CLASS, wrapRange, unwrap, unwrapAll, recolor, setNote, setBookmark, flash, getMarks, exists, first };
+  HL.marker = { MARK_CLASS, wrapRange, unwrap, unwrapAll, recolor, setNote, setBookmark, setLearn, flash, getMarks, exists, first };
 })();

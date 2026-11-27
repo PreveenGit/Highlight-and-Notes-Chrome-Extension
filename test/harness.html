@@ -191,6 +191,18 @@
         eq(anchor.buildIndex(fixture).text, before, 'page text unchanged');
       });
 
+      test('setLearn puts the "?" badge on the last mark only, and clears it', () => {
+        const before = setup(CROSS).text;
+        marker.wrapRange(rangeOver('lo', 'Sec'), 'l', 'green');
+        const marks = marker.getMarks('l');
+        marker.setLearn('l', true);
+        eq(marks.filter((m) => m.classList.contains('hl-learn-badge')).length, 1, 'one badge');
+        eq(marks[marks.length - 1].classList.contains('hl-learn-badge'), true, 'on the last mark');
+        eq(anchor.buildIndex(fixture).text, before, 'page text unchanged');
+        marker.setLearn('l', false);
+        eq(marks.some((m) => m.classList.contains('hl-learn-badge')), false, 'cleared');
+      });
+
       test('page text is unchanged by marks', () => {
         const before = setup(CROSS).text;
         marker.wrapRange(rangeOver('Hello', 'here'), 'a', 'yellow');
@@ -296,6 +308,20 @@
         eq(md, '## [P](https://x.test/)\n\n> 🔖 Resume here\n', 'markdown');
       });
 
+      test('learn more: To learn filter, search, Markdown and withLearn', () => {
+        const pages = HL.data.toPages(STORAGE);
+        pages[0].highlights = pages[0].highlights.map((h) => (h.id === 'f1' ? { ...h, learn: true } : h));
+        pages[1].highlights = pages[1].highlights.map((h) => (h.id === 'd3' ? { ...h, learn: true } : h));
+        eq(ids(HL.data.filterAndSort(pages, { learn: true }).timeline.map((t) => t.highlight)), 'd3,f1', 'only flagged, newest first');
+        eq(ids(HL.data.filterAndSort(pages, { learn: true, query: 'quick' }).timeline.map((t) => t.highlight)), 'f1', 'search still applies');
+        eq(HL.data.filterAndSort(pages, {}).count, 5, 'other views unaffected');
+        const md = HL.data.toMarkdown([{ title: 'P', url: 'https://x.test/', highlights: [{ text: 'Why?', learn: true }, { text: 'Both', learn: true, bookmark: true }] }]);
+        eq(md, '## [P](https://x.test/)\n\n> ❓ Why?\n\n> 🔖 ❓ Both\n', 'markdown');
+        const base = hl('a', 'pink', 'A', 1);
+        eq(HL.withLearn(base, true).learn, true, 'set');
+        eq('learn' in HL.withLearn({ ...base, learn: true }, false), false, 'cleared');
+      });
+
       test('withNote sets, trims and removes a note', () => {
         const base = hl('a', 'pink', 'A', 1);
         eq(HL.withNote(base, '  hi  ').note, 'hi', 'trimmed');
@@ -386,6 +412,20 @@
         eq('bookmark' in b2, false, 'non-boolean dropped');
       });
 
+      test('backup keeps the learn-more flag and ignores bad values', () => {
+        const pages = HL.data.parseBackup(
+          JSON.stringify({
+            format: 'highlight-backup',
+            version: 1,
+            pages: [{ url: 'https://a.test/', highlights: [{ id: 'l1', quote: { exact: 'a' }, learn: true }, { id: 'l2', quote: { exact: 'b' }, learn: 1 }] }]
+          })
+        );
+        const [l1, l2] = pages[0].highlights;
+        eq(l1.learn, true, 'flag kept');
+        eq('learn' in l2, false, 'non-boolean dropped');
+        eq(HL.data.parseBackup(JSON.stringify(HL.data.toBackup(pages)))[0].highlights[0].learn, true, 'round trip');
+      });
+
       test('merging keeps existing highlights and skips duplicates', () => {
         const existing = [hl('a', 'pink', 'A', 1), hl('b', 'blue', 'B', 2)];
         const incoming = [hl('b', 'yellow', 'B', 2), hl('c', 'green', 'C', 3), hl('c', 'green', 'C', 3)];
@@ -421,6 +461,13 @@
         eq(ids(diff.removed), 'c', 'removed');
         eq(ids(diff.recolored), 'b', 'recolored');
         eq(ids(diff.noted), '', 'no note changes');
+        eq(ids(diff.flagged), '', 'no learn-more changes');
+      });
+
+      test('diffHighlights finds learn-more changes', () => {
+        const before = [hl('a', 'pink', 'A', 1), { ...hl('b', 'blue', 'B', 2), learn: true }, { ...hl('c', 'green', 'C', 3), learn: true }];
+        const after = [{ ...hl('a', 'pink', 'A', 1), learn: true }, hl('b', 'blue', 'B', 2), { ...hl('c', 'green', 'C', 3), learn: true }];
+        eq(ids(HL.diffHighlights(before, after).flagged), 'a,b', 'flagged and cleared');
       });
 
       test('diffHighlights finds note changes', () => {

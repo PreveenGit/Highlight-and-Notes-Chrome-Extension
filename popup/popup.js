@@ -62,6 +62,14 @@
           text.prepend(note);
         }
 
+        if (h.learn) {
+          const badge = document.createElement('span');
+          badge.className = 'learn-badge';
+          badge.textContent = '?';
+          badge.title = 'Marked to learn more';
+          text.append(badge);
+        }
+
         const body = document.createElement('div');
         body.className = 'body';
         body.append(text);
