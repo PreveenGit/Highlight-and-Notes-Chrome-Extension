@@ -17,7 +17,7 @@
            side=right           put the UI on the right, where Chrome's side panel is
            float                (popup) float over the page at the top right
            seed[=<json>]        first add sample pages: the built-in set, or a JSON file of
-                                [{ url, title, highlights: [{ id, color, text, daysAgo, note? }] }]
+                                [{ url, title, highlights: [{ id, color, text, daysAgo, note?, bookmark?, learn? }] }]
            view=page|pages|timeline, search=<text>   (library) starting view and search
          Reload to re-open the UI. store/screenshots/capture.ps1 uses this page. -->
     <iframe id="site" title="Page"></iframe>
@@ -66,6 +66,9 @@
           frame.style.width = float ? '100vw' : `calc(100vw - ${width + 1}px)`;
           frame.style[onRight ? 'left' : 'right'] = '0';
           if (!float) frame.style[onRight ? 'borderRight' : 'borderLeft'] = '1px solid #ccc';
+          // A floating popup is the <body>; keep the page frame outside it, or the frame
+          // (positioned, later in the body) paints over the popup's content.
+          if (float) document.documentElement.insertBefore(frame, document.body);
           frame.src = page;
           // Wait for the page's content script (and any screenshot scene) to finish.
           await new Promise((resolve) => {
@@ -99,6 +102,9 @@
 
         const body = document.body.style;
         if (float) {
+          // Without a background of its own, <html> takes over the body's, and the
+          // floating popup would be see-through.
+          document.documentElement.style.background = '#fff';
           Object.assign(body, {
             position: 'fixed',
             top: '8px',
@@ -155,7 +161,9 @@
               quote: { exact: h.text, prefix: '', suffix: '' },
               position: { start: i * 1000, end: i * 1000 + h.text.length },
               createdAt: now - h.daysAgo * 86400000,
-              ...(h.note ? { note: h.note } : {})
+              ...(h.note ? { note: h.note } : {}),
+              ...(h.bookmark ? { bookmark: true } : {}),
+              ...(h.learn ? { learn: true } : {})
             }))
           };
         }

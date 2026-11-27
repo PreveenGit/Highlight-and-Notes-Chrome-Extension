@@ -19,29 +19,40 @@ Upload `dist/highlight-<version>.zip` built by `store/package.ps1`.
 
 **Summary** (from `manifest.json`, max 132 characters)
 
-> Highlight words and sentences on any web page and add notes. Highlights are saved per page and restored when you come back.
+> Highlight text on any page, add notes, bookmark your place and mark what to learn later. Everything comes back when you return.
 
 **Description**
 
 ```text
-Highlight words and sentences on any web page, like a highlighter pen, and find them again later.
+Highlight words and sentences on any web page, add your own notes, bookmark where you stopped reading, and mark what you want to learn more about. Everything is saved per page and comes back when you return.
 
 HIGHLIGHT AS YOU READ
 • Select text and pick one of five colors from the small toolbar, or press Alt+Shift+H.
-• Click a highlight to change its color, add a note, copy it, or remove it.
-• Add a note to any highlight. A small badge marks it on the page; hover to read the note.
-• Bookmark a line to keep your place. Next time, click Jump to bookmark in the toolbar popup to go straight back to it.
+• Click a highlight to recolor it, copy it, or remove it.
 • Highlights come back automatically when you return to the page, even if the page has changed a little.
+
+ADD NOTES
+• Add a note to any highlight, right on the page. A small badge marks highlights with notes; hover to read the note.
+• Edit notes on the page or in the library. Search and exports include them.
+
+BOOKMARK YOUR PLACE
+• Select a line and click the bookmark button to mark where you stopped. Each page keeps one bookmark.
+• Next time, click the toolbar icon, then Jump to bookmark to go straight back to that line.
+
+LEARN MORE LATER
+• Found something you don't fully understand? Click the Learn more button (graduation cap) and write down your question.
+• A "?" badge marks the passage on the page, and the To learn tab in the library collects these passages from every page.
+• Click Got it once you understand. The highlight and your question stay.
 
 ONE LIBRARY FOR EVERYTHING
 • See every highlight from every page in Chrome's side panel (Alt+Shift+L) or in a full tab.
 • Search highlight text, notes, page titles and sites. Filter by color. Sort by date, site or number of highlights.
-• Browse page by page, or as a timeline with the newest first.
+• Browse page by page, as a timeline, or as your To learn list.
 • Click any highlight to jump straight to it on its page.
 • Recolor or delete from the library, with undo. Open tabs update instantly.
 
 EXPORT AND BACK UP
-• Export highlights as Markdown for your notes.
+• Export highlights, notes, bookmarks and Learn more items as Markdown.
 • Save everything to a JSON backup and import it again, for example on another computer.
 
 PRIVATE BY DESIGN
@@ -61,11 +72,11 @@ Works on most web pages. Chrome doesn't allow extensions on chrome:// pages, the
 
 | File | Shows |
 | --- | --- |
-| `store/screenshots/1-highlight.png` | Highlights on an article (badges mark the ones with notes) and the toolbar over a selection |
-| `store/screenshots/2-side-panel.png` | The side panel listing the current page's highlights and their notes |
-| `store/screenshots/3-library.png` | The full-tab library with highlights and notes grouped by page |
-| `store/screenshots/4-search.png` | Searching all highlights and notes, in timeline view |
-| `store/screenshots/5-note.png` | Writing a note on a highlight |
+| `store/screenshots/1-highlight.png` | An article with highlights, note badges, a "?" (learn more) and a bookmark ribbon; the toolbar over a selection shows the note, bookmark and learn-more buttons |
+| `store/screenshots/2-side-panel.png` | The side panel listing the page's highlights with notes, a Learn more item and the bookmark |
+| `store/screenshots/3-bookmark.png` | The toolbar popup with Jump to bookmark |
+| `store/screenshots/4-to-learn.png` | The library's To learn tab: passages marked to learn more, with questions, from several sites |
+| `store/screenshots/5-learn.png` | Writing the question for a passage marked to learn more |
 
 Small promo tile (440×280) and marquee (1400×560) are optional and not included.
 
@@ -73,7 +84,7 @@ Small promo tile (440×280) and marquee (1400×560) are optional and not include
 
 **Single purpose**
 
-> Highlight text on web pages and add optional notes to those highlights, keep them on the user's device, and let the user browse, search and manage them in a library.
+> Highlight text on web pages, with optional notes, a bookmark per page and "learn more" marks; keep them on the user's device, and let the user browse, search and manage them in a library.
 
 **Permission justifications**
 
@@ -112,4 +123,4 @@ GitHub Pages publishes `docs/` from the `main` branch of `PreveenGit/Highlight-a
 
 ## Test instructions tab (optional)
 
-> No account or setup is needed. Open any article, select a sentence, and click a color in the toolbar that appears (or press Alt+Shift+H). Click the highlight to recolor or delete it. Reload the page: the highlight is restored. Click the toolbar icon for the page's highlights, and press Alt+Shift+L (or the side-panel button in the popup) to open the library.
+> No account or setup is needed. Open any article, select a sentence, and click a color in the toolbar that appears (or press Alt+Shift+H). Click the highlight to recolor or delete it. Reload the page: the highlight is restored. In the toolbar, the speech-bubble button adds a note, the bookmark button bookmarks the line (the toolbar icon's popup then shows Jump to bookmark), and the graduation-cap button marks a passage to learn more and asks for a question. Press Alt+Shift+L (or the side-panel button in the popup) to open the library; the To learn tab lists passages marked to learn more.

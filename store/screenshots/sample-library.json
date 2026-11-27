@@ -12,7 +12,7 @@
     "url": "https://news.example.net/science/sleep-and-memory",
     "title": "What sleep does for memory",
     "highlights": [
-      { "id": "s-sleep-1", "color": "green", "text": "During deep sleep, the brain replays the day's experiences and decides what to keep.", "daysAgo": 1.2 },
+      { "id": "s-sleep-1", "color": "green", "text": "During deep sleep, the brain replays the day's experiences and decides what to keep.", "daysAgo": 1.2, "learn": true, "note": "Which stage of sleep does the replaying, and how was it measured?" },
       { "id": "s-sleep-2", "color": "yellow", "text": "Memory is less a recording than a reconstruction, rebuilt a little differently each time we read it back.", "daysAgo": 1.1, "note": "Good quote for the talk on note-taking." },
       { "id": "s-sleep-3", "color": "pink", "text": "Short naps help, but only when they stay under thirty minutes.", "daysAgo": 1.0 }
     ]
@@ -21,7 +21,7 @@
     "url": "https://learn.example.org/design/readable-interfaces",
     "title": "Designing readable interfaces",
     "highlights": [
-      { "id": "s-design-1", "color": "blue", "text": "Body text needs a contrast ratio of at least 4.5 to 1 to stay readable.", "daysAgo": 3 },
+      { "id": "s-design-1", "color": "blue", "text": "Body text needs a contrast ratio of at least 4.5 to 1 to stay readable.", "daysAgo": 3, "learn": true, "note": "How is the contrast ratio calculated?" },
       { "id": "s-design-2", "color": "orange", "text": "Never rely on color alone to carry meaning.", "daysAgo": 3.1, "note": "Check the status badges on our dashboard: red and green only." },
       { "id": "s-design-3", "color": "green", "text": "Lines of 50 to 75 characters are the easiest to read.", "daysAgo": 3.2 }
     ]
@@ -31,7 +31,7 @@
     "title": "Keyboard shortcuts that save an hour a week",
     "highlights": [
       { "id": "s-keys-1", "color": "yellow", "text": "Learn one new shortcut each week and use it until it is automatic.", "daysAgo": 6 },
-      { "id": "s-keys-2", "color": "blue", "text": "Most time is lost switching between the mouse and the keyboard.", "daysAgo": 6.1 }
+      { "id": "s-keys-2", "color": "yellow", "text": "Most time is lost switching between the mouse and the keyboard.", "daysAgo": 6.1, "bookmark": true }
     ]
   },
   {
@@ -46,7 +46,7 @@
     "url": "https://blog.example.com/reading/how-to-read-a-paper",
     "title": "How to read a research paper in three passes",
     "highlights": [
-      { "id": "s-paper-1", "color": "pink", "text": "Read the abstract, the headings and the conclusion before anything else.", "daysAgo": 21 },
+      { "id": "s-paper-1", "color": "pink", "text": "Read the abstract, the headings and the conclusion before anything else.", "daysAgo": 21, "learn": true },
       { "id": "s-paper-2", "color": "yellow", "text": "On the second pass, read the figures as carefully as the text.", "daysAgo": 21.1, "note": "Try this on the paper for Friday's reading group." }
     ]
   }

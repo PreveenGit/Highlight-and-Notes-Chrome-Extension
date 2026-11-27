@@ -19,7 +19,7 @@
   </head>
   <body>
     <!-- Sample article for the store screenshots (original text). Open with ?stub to run
-         the extension on it; &scene=marks|toolbar|edit|note sets up what the screenshot shows. -->
+         the extension on it; &scene=marks|toolbar|edit|note|learn sets up what the screenshot shows. -->
     <header class="site">
       <span class="logo"></span> Field Notes
       <nav><span>Essays</span><span>Archive</span><span>About</span></nav>
@@ -51,15 +51,20 @@
 
     <script src="../../test/load-extension.js"></script>
     <script>
-      // Highlights to create, in order (with an optional note), and what each scene adds on top.
+      // Highlights to create, in order, with an optional note and whether each is a
+      // bookmark or marked "learn more"; each scene adds something on top.
+      const LEARN_QUESTION = 'Why does marking a sentence help me remember it?';
       const MARKS = [
-        ['Reading is not a race; it is a conversation with someone who is not in the room.', 'yellow', 'Opening line for my talk on attention?'],
-        ['mark the sentence that changed your mind', 'green'],
-        ['the margins of a page were where thinking happened', 'blue', 'Compare with the essay on marginalia in old books.'],
-        ['Return to your highlights a week later.', 'pink']
+        ['Reading is not a race; it is a conversation with someone who is not in the room.', 'yellow', { note: 'Opening line for my talk on attention?' }],
+        ['mark the sentence that changed your mind', 'green', { learn: true, note: LEARN_QUESTION }],
+        ['the margins of a page were where thinking happened', 'blue', { note: 'Compare with the essay on marginalia in old books.' }],
+        ['Return to your highlights a week later.', 'pink'],
+        // Phrases must sit on one source line: the page text keeps the HTML's line breaks.
+        ['still feel sharp are the ideas you actually learned.', 'yellow', { bookmark: true }]
       ];
       // Typed into the note editor in the "note" scene.
       const NOTE_DRAFT = 'Set a weekly reminder: review highlights every Sunday morning.';
+      const LEARN_PROMPT = 'What do you want to learn about this?';
       const scene = new URLSearchParams(location.search).get('scene');
       window.__sceneReady = !scene; // test/preview.html waits for this before opening its UI
 
@@ -84,20 +89,31 @@
         };
 
         await __hlSend({ type: 'clear' });
-        for (const [phrase, color, note] of MARKS) {
+        for (const [phrase, color, { note, learn, bookmark } = {}] of MARKS) {
           await useColor(color);
           select(phrase);
           await __hlSend({ type: 'highlight-selection' });
+          const { id } = HL.store.all().at(-1);
           if (note) {
-            const { id } = HL.store.all().at(-1);
             HL.marker.setNote(id, note);
             await HL.store.setNote(id, note);
+          }
+          if (learn) {
+            HL.marker.setLearn(id, true);
+            await HL.store.setLearn(id, true);
+          }
+          if (bookmark) {
+            HL.marker.setBookmark(id);
+            await HL.store.update(id, { bookmark: true });
           }
         }
         await useColor('yellow');
 
         const pinkMark = () => document.querySelector('mark.hl-mark[data-hl-color="pink"]');
+        const greenMark = () => document.querySelector('mark.hl-mark[data-hl-color="green"]');
         const showNoteEditor = () => HL.toolbar.showNote(pinkMark().getBoundingClientRect(), { text: NOTE_DRAFT });
+        const showLearnEditor = () =>
+          HL.toolbar.showNote(greenMark().getBoundingClientRect(), { text: LEARN_QUESTION, placeholder: LEARN_PROMPT });
 
         // Show the toolbars through the same mouseup handling a real click uses.
         const showToolbar = () => {
@@ -120,6 +136,13 @@
             const rect = pinkMark().getBoundingClientRect();
             pinkMark().dispatchEvent(new MouseEvent('mouseup', { bubbles: true, button: 0, clientX: rect.left + 10, clientY: rect.top + 5 }));
             setTimeout(showNoteEditor, 20); // after the edit toolbar the click opens
+          } else if (scene === 'learn') {
+            // The moment after clicking Learn more: the passage has its "?" and the
+            // note box asks what to learn.
+            getSelection().removeAllRanges();
+            const rect = greenMark().getBoundingClientRect();
+            greenMark().dispatchEvent(new MouseEvent('mouseup', { bubbles: true, button: 0, clientX: rect.left + 10, clientY: rect.top + 5 }));
+            setTimeout(showLearnEditor, 20);
           }
         };
         showToolbar();
@@ -136,6 +159,8 @@
             HL.toolbar.show(mark.getBoundingClientRect(), { mode: 'edit', color: 'green' });
           } else if (scene === 'note') {
             showNoteEditor(); // re-place it for the new window size
+          } else if (scene === 'learn') {
+            showLearnEditor();
           }
         });
         await wait(100);

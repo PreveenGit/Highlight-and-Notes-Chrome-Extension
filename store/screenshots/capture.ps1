@@ -29,9 +29,9 @@ $inPreview = [uri]::EscapeDataString("../${article}marks") # article as the page
 $shots = [ordered]@{
   '1-highlight.png'  = "${article}toolbar"
   '2-side-panel.png' = "test/preview.html?ui=panel&side=right&seed=$library&page=$inPreview"
-  '3-library.png'    = "test/preview.html?ui=tab&page=none&seed=$library"
-  '4-search.png'     = "test/preview.html?ui=tab&page=none&seed=$library&view=timeline&search=read"
-  '5-note.png'       = "${article}note"
+  '3-bookmark.png'   = "test/preview.html?ui=popup&float&page=$inPreview"
+  '4-to-learn.png'   = "test/preview.html?ui=tab&page=none&seed=$library&view=learn"
+  '5-learn.png'      = "${article}learn"
 }
 
 foreach ($name in $shots.Keys) {
