@@ -31,7 +31,7 @@ $shots = [ordered]@{
   '2-side-panel.png' = "test/preview.html?ui=panel&side=right&seed=$library&page=$inPreview"
   '3-bookmark.png'   = "test/preview.html?ui=popup&float&page=$inPreview"
   '4-to-learn.png'   = "test/preview.html?ui=tab&page=none&seed=$library&view=learn"
-  '5-learn.png'      = "${article}learn"
+  '5-backup.png'     = "test/preview.html?ui=tab&page=none&seed=$library&menu"
 }
 
 foreach ($name in $shots.Keys) {

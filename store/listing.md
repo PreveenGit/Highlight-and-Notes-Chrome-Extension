@@ -24,40 +24,47 @@ Upload `dist/highlight-<version>.zip` built by `store/package.ps1`.
 **Description**
 
 ```text
-Highlight words and sentences on any web page, add your own notes, bookmark where you stopped reading, and mark what you want to learn more about. Everything is saved per page and comes back when you return.
+Read the web the way you read a good book: highlight what matters, write notes in the margin, keep your place, and come back to what you didn't understand yet. Everything is saved per page and comes back when you return.
 
 HIGHLIGHT AS YOU READ
-• Select text and pick one of five colors from the small toolbar, or press Alt+Shift+H.
+Find the important parts again in seconds, instead of rereading the whole page.
+• Select text and pick one of five colors from the small toolbar, or press Alt+Shift+H. Use the colors to tell ideas, quotes and to-dos apart.
 • Click a highlight to recolor it, copy it, or remove it.
 • Highlights come back automatically when you return to the page, even if the page has changed a little.
 
 ADD NOTES
+Remember why a passage mattered: your own thoughts stay right next to the text.
 • Add a note to any highlight, right on the page. A small badge marks highlights with notes; hover to read the note.
-• Edit notes on the page or in the library. Search and exports include them.
+• Edit notes on the page or in the library. Search finds words in your notes, and exports include them.
 
 BOOKMARK YOUR PLACE
-• Select a line and click the bookmark button to mark where you stopped. Each page keeps one bookmark.
-• Next time, click the toolbar icon, then Jump to bookmark to go straight back to that line.
+Stop hunting for where you left off in long articles, docs and tutorials.
+• Select a line and click the bookmark button. Each page keeps one bookmark.
+• When you come back, click the toolbar icon, then Jump to bookmark: the page scrolls straight to that line.
 
 LEARN MORE LATER
-• Found something you don't fully understand? Click the Learn more button (graduation cap) and write down your question.
+Turn the parts you don't understand yet into a study list, instead of forgetting them.
+• Click the Learn more button (graduation cap) on a passage and write down your question.
 • A "?" badge marks the passage on the page, and the To learn tab in the library collects these passages from every page.
 • Click Got it once you understand. The highlight and your question stay.
 
 ONE LIBRARY FOR EVERYTHING
+All your reading in one place, not scattered across tabs and bookmarks.
 • See every highlight from every page in Chrome's side panel (Alt+Shift+L) or in a full tab.
 • Search highlight text, notes, page titles and sites. Filter by color. Sort by date, site or number of highlights.
 • Browse page by page, as a timeline, or as your To learn list.
 • Click any highlight to jump straight to it on its page.
 • Recolor or delete from the library, with undo. Open tabs update instantly.
 
-EXPORT AND BACK UP
-• Export highlights, notes, bookmarks and Learn more items as Markdown.
-• Save everything to a JSON backup and import it again, for example on another computer.
+EXPORT, IMPORT AND BACK UP
+Your highlights are yours: take them anywhere, and don't lose them when you change computers.
+• Export highlights, notes, bookmarks and Learn more items as Markdown, ready to paste into Obsidian, Notion, a document or an email.
+• Save everything to one JSON backup file and import it on another computer or after reinstalling. Importing skips anything you already have, so nothing is duplicated.
 
 PRIVATE BY DESIGN
+Read freely: no account needed, and nothing leaves your computer.
 • Your highlights stay on your computer, in Chrome's local storage.
-• No account, no servers, no tracking, no ads.
+• No servers, no tracking, no ads.
 
 Works on most web pages. Chrome doesn't allow extensions on chrome:// pages, the Chrome Web Store or the built-in PDF viewer.
 ```
@@ -76,7 +83,7 @@ Works on most web pages. Chrome doesn't allow extensions on chrome:// pages, the
 | `store/screenshots/2-side-panel.png` | The side panel listing the page's highlights with notes, a Learn more item and the bookmark |
 | `store/screenshots/3-bookmark.png` | The toolbar popup with Jump to bookmark |
 | `store/screenshots/4-to-learn.png` | The library's To learn tab: passages marked to learn more, with questions, from several sites |
-| `store/screenshots/5-learn.png` | Writing the question for a passage marked to learn more |
+| `store/screenshots/5-backup.png` | The full-tab library with the Export Markdown / Export backup / Import backup menu open |
 
 Small promo tile (440×280) and marquee (1400×560) are optional and not included.
 
