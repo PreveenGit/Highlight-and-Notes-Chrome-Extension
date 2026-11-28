@@ -7,7 +7,7 @@
 
   const FAST_RETRY_MS = 10000; // retry restoring aggressively for this long after load
   const SLOW_RETRY_MS = 3000; // after that, at most this often
-  const QUESTION_PROMPT = 'What do you want to find out?'; // question box placeholder
+  const QUESTION_PROMPT = 'What do you want to find out?'; // question box title
 
   let settings = { ...HL.DEFAULT_SETTINGS };
   let currentHref = location.href;
@@ -222,11 +222,16 @@
     editingField = field;
     const saved = HL.store.get(activeId);
     const rect = Array.from(marks[0].getClientRects()).find((r) => r.width && r.height) || marks[0].getBoundingClientRect();
+    // The box shows the passage it's about, in its highlight color.
+    const passage = {
+      quote: saved ? saved.text : marks.map((m) => m.textContent).join(''),
+      color: saved && saved.bookmark ? '#8ab4f8' : HL.colorValue(saved ? saved.color : marks[0].dataset.hlColor)
+    };
     HL.toolbar.showNote(
       rect,
       field === 'question'
-        ? { text: HL.questionOf(saved), placeholder: QUESTION_PROMPT, title: 'Learn more · your question', kind: 'question' }
-        : { text: HL.noteOf(saved), placeholder: 'Add a note…', title: 'Note', kind: 'note' }
+        ? { ...passage, text: HL.questionOf(saved), placeholder: 'Write your question…', title: QUESTION_PROMPT, kind: 'question' }
+        : { ...passage, text: HL.noteOf(saved), placeholder: 'Write your note…', title: HL.noteOf(saved) ? 'Edit note' : 'Add a note', kind: 'note' }
     );
   }
 

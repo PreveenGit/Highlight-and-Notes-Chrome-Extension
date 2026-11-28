@@ -9,6 +9,7 @@
     bookmark: 'M17 3H7c-1.1 0-1.99.9-1.99 2L5 21l7-3 7 3V5c0-1.1-.9-2-2-2z',
     learn: 'M5 13.18v4L12 21l7-3.82v-4L12 17l-7-3.82zM12 3 1 9l11 6 9-4.91V17h2V9L12 3z',
     check: 'M9 16.17 4.83 12l-1.42 1.41L9 19 21 7l-1.41-1.41z',
+    close: 'M19 6.41 17.59 5 12 10.59 6.41 5 5 6.41 10.59 12 5 17.59 6.41 19 12 13.41 17.59 19 19 17.59 13.41 12z',
     question:
       'M11 18h2v-2h-2v2zm1-16C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm0 18c-4.41 0-8-3.59-8-8s3.59-8 8-8 8 3.59 8 8-3.59 8-8 8zm0-14c-2.21 0-4 1.79-4 4h2c0-1.1.9-2 2-2s2 .9 2 2c0 2-3 1.75-3 5h2c0-2.25 3-2.5 3-5 0-2.21-1.79-4-4-4z',
     note: 'M21.99 4c0-1.1-.89-2-1.99-2H4c-1.1 0-2 .9-2 2v12c0 1.1.9 2 2 2h14l4 4-.01-18zM18 14H6v-2h12v2zm0-3H6V9h12v2zm0-3H6V6h12v2z',
@@ -43,12 +44,21 @@
     @keyframes hl-in {
       from { opacity: 0; transform: translateY(var(--shift)) scale(0.97); }
     }
+    /* The note box: blue for a note, purple for a Learn more question. */
     .bar.note-mode {
+      --accent: #8ab4f8;
+      --accent-soft: rgba(138, 180, 248, 0.16);
       flex-direction: column;
       align-items: stretch;
-      gap: 8px;
-      padding: 10px;
-      border-radius: 16px;
+      gap: 10px;
+      width: 312px;
+      padding: 12px;
+      border-radius: 18px;
+      background: rgba(28, 29, 32, 0.94);
+    }
+    .bar.note-mode.question {
+      --accent: #d7aefb;
+      --accent-soft: rgba(215, 174, 251, 0.16);
     }
     button { all: unset; box-sizing: border-box; cursor: pointer; }
     button:focus-visible { outline: 2px solid #8ab4f8; outline-offset: 2px; }
@@ -81,20 +91,63 @@
     .icon[data-action='bookmark'] { color: #8ab4f8; }
     .icon[data-action='learn'],
     .icon[data-action='question'] { color: #d7aefb; }
-    .note-title {
-      display: flex;
-      align-items: center;
-      gap: 6px;
-      padding: 0 2px;
-      color: #bdc1c6;
-      font: 600 11px/1.2 system-ui, -apple-system, 'Segoe UI', sans-serif;
-      letter-spacing: 0.02em;
+    .note-head { display: flex; align-items: center; gap: 10px; }
+    .note-tile {
+      display: grid;
+      place-items: center;
+      flex: none;
+      width: 28px;
+      height: 28px;
+      border-radius: 9px;
+      background: var(--accent-soft);
+      color: var(--accent);
     }
-    .note-title svg { width: 14px; height: 14px; fill: currentColor; }
-    .bar.question .note-title { color: #d7aefb; }
-    .bar.question textarea:focus { border-color: #d7aefb; box-shadow: 0 0 0 3px rgba(215, 174, 251, 0.25); }
-    .bar.question .text-btn.primary { background: #d7aefb; }
-    .bar.question .text-btn.primary:hover { background: #e7cdfd; }
+    .note-tile svg { width: 16px; height: 16px; fill: currentColor; }
+    .note-title {
+      flex: 1;
+      min-width: 0;
+      color: #f1f3f4;
+      font: 650 13px/1.2 system-ui, -apple-system, 'Segoe UI', sans-serif;
+    }
+    .note-close {
+      display: grid;
+      place-items: center;
+      flex: none;
+      width: 28px;
+      height: 28px;
+      border-radius: 50%;
+      color: #9aa0a6;
+      transition: background-color 0.12s, color 0.12s;
+    }
+    .note-close:hover { background: rgba(255, 255, 255, 0.1); color: #e8eaed; }
+    .note-close svg { width: 16px; height: 16px; fill: currentColor; }
+    /* The highlighted passage the note is about, with its color. */
+    .note-quote {
+      display: -webkit-box;
+      overflow: hidden;
+      padding: 7px 10px 7px 13px;
+      border-radius: 10px;
+      background: rgba(255, 255, 255, 0.05);
+      box-shadow: inset 3px 0 0 var(--hl, #fff176);
+      color: #bdc1c6;
+      font: italic 12px/1.45 system-ui, -apple-system, 'Segoe UI', sans-serif;
+      word-break: break-word;
+      -webkit-line-clamp: 2;
+      -webkit-box-orient: vertical;
+    }
+    kbd {
+      display: inline-block;
+      min-width: 16px;
+      margin: 0 1px;
+      padding: 1px 5px;
+      border: 1px solid rgba(255, 255, 255, 0.16);
+      border-bottom-width: 2px;
+      border-radius: 5px;
+      background: rgba(255, 255, 255, 0.06);
+      color: #bdc1c6;
+      font: 600 10px/1.3 system-ui, -apple-system, 'Segoe UI', sans-serif;
+      text-align: center;
+    }
     .icon[data-action='delete']:hover { color: #f28b82; background: rgba(242, 139, 130, 0.14); }
     .icon svg { width: 18px; height: 18px; fill: currentColor; }
     .icon::after {
@@ -121,44 +174,49 @@
     .icon:focus-visible::after { opacity: 1; transform: translate(-50%, 0); transition-delay: 0.3s; }
     .icon:last-child:hover::after,
     .icon:last-child:focus-visible::after { transform: none; }
+    /* Grows with the text (see grow() below), up to max-height. */
     textarea {
       all: unset;
       box-sizing: border-box;
       display: block;
-      width: 280px;
-      min-height: 80px;
+      width: 100%;
+      min-height: 76px;
       max-height: 220px;
-      padding: 9px 11px;
-      border: 1px solid rgba(255, 255, 255, 0.1);
-      border-radius: 10px;
-      background: rgba(255, 255, 255, 0.06);
-      color: #e8eaed;
-      font: 13px/1.45 system-ui, -apple-system, 'Segoe UI', sans-serif;
+      padding: 10px 12px;
+      border: 1px solid rgba(255, 255, 255, 0.08);
+      border-radius: 12px;
+      background: rgba(255, 255, 255, 0.05);
+      color: #f1f3f4;
+      font: 13.5px/1.5 system-ui, -apple-system, 'Segoe UI', sans-serif;
       white-space: pre-wrap;
       overflow-wrap: break-word;
       overflow-y: auto;
-      resize: vertical;
+      resize: none;
       cursor: text;
       user-select: text;
-      transition: border-color 0.12s, box-shadow 0.12s;
+      transition: border-color 0.12s, box-shadow 0.12s, background-color 0.12s;
     }
-    textarea::placeholder { color: #9aa0a6; }
-    textarea:focus { border-color: #8ab4f8; box-shadow: 0 0 0 3px rgba(138, 180, 248, 0.25); }
-    .row { display: flex; align-items: center; gap: 6px; }
-    .hint { flex: 1; padding-left: 2px; color: #9aa0a6; font-size: 11px; }
+    textarea::placeholder { color: #80868b; }
+    textarea:focus { border-color: var(--accent); background: rgba(255, 255, 255, 0.07); box-shadow: 0 0 0 3px var(--accent-soft); }
+    .row { display: flex; align-items: center; gap: 8px; }
+    .hint { flex: 1; padding-left: 2px; color: #80868b; font-size: 11px; line-height: 1.6; white-space: nowrap; }
     .text-btn {
+      display: inline-flex;
+      align-items: center;
+      gap: 5px;
       padding: 7px 14px;
       border-radius: 999px;
       color: #e8eaed;
-      font-weight: 600;
-      transition: background-color 0.12s, transform 0.12s ease-out;
+      font-weight: 650;
+      transition: background-color 0.12s, transform 0.12s ease-out, filter 0.12s;
     }
     .text-btn:hover { background: rgba(255, 255, 255, 0.12); }
     .text-btn:active { transform: scale(0.96); }
-    .text-btn.primary { background: #8ab4f8; color: #1c1d20; }
-    .text-btn.primary:hover { background: #aecbfa; }
+    .text-btn.primary { padding-left: 11px; background: var(--accent); color: #1c1d20; }
+    .text-btn.primary:hover { background: var(--accent); filter: brightness(1.08); }
+    .text-btn svg { width: 15px; height: 15px; fill: currentColor; }
     @media (prefers-reduced-motion: reduce) {
-      .bar, .swatch, .icon, .icon::after, .text-btn, textarea { animation: none; transition: none; }
+      .bar, .swatch, .icon, .icon::after, .text-btn, textarea, .note-close { animation: none; transition: none; }
     }
   `;
 
@@ -252,28 +310,50 @@
     place(rect);
   }
 
-  // The text box for a note or a Learn more question (kind 'question' is purple),
-  // with a title line, Save and Cancel. Ctrl/Cmd+Enter saves and Escape cancels.
-  function showNote(rect, { text = '', placeholder = 'Add a note…', title = 'Note', kind = 'note' } = {}) {
+  // The text box for a note or a Learn more question (kind 'question' is purple):
+  // a header with a close button, the highlighted passage (`quote`, shown with its
+  // `color`), a box that grows as you type, and Save. Ctrl/Cmd+Enter saves and
+  // Escape cancels.
+  function showNote(rect, { text = '', placeholder = 'Add a note…', title = 'Note', kind = 'note', quote = '', color = '' } = {}) {
     ensure();
     bar.className = `bar note-mode ${kind === 'question' ? 'question' : ''}`.trim();
     bar.replaceChildren();
 
     const heading = document.createElement('div');
-    heading.className = 'note-title';
-    const headingIcon = document.createElementNS('http://www.w3.org/2000/svg', 'svg');
-    headingIcon.setAttribute('viewBox', '0 0 24 24');
-    const headingPath = document.createElementNS('http://www.w3.org/2000/svg', 'path');
-    headingPath.setAttribute('d', ICONS[kind === 'question' ? 'learn' : 'note']);
-    headingIcon.append(headingPath);
+    heading.className = 'note-head';
+    const tile = document.createElement('span');
+    tile.className = 'note-tile';
+    tile.append(svgIcon(kind === 'question' ? 'learn' : 'note'));
     const headingText = document.createElement('span');
+    headingText.className = 'note-title';
     headingText.textContent = title;
-    heading.append(headingIcon, headingText);
+    const close = button('note-cancel', 'Cancel (Esc)');
+    close.className = 'note-close';
+    close.append(svgIcon('close'));
+    heading.append(tile, headingText, close);
+    bar.append(heading);
+
+    if (quote) {
+      const passage = document.createElement('div');
+      passage.className = 'note-quote';
+      passage.textContent = `“${quote.replace(/\s+/g, ' ').trim()}”`;
+      if (color) passage.style.setProperty('--hl', color);
+      bar.append(passage);
+    }
 
     noteArea = document.createElement('textarea');
     noteArea.value = text;
     noteArea.placeholder = placeholder;
     noteArea.setAttribute('aria-label', title);
+    noteArea.rows = 3;
+    // Grows with the text; while above the passage it grows upward, so it never
+    // covers the line it's about.
+    const grow = () => {
+      noteArea.style.height = 'auto';
+      noteArea.style.height = `${Math.min(noteArea.scrollHeight + 2, 220)}px`;
+      place(rect);
+    };
+    noteArea.addEventListener('input', grow);
     // content/guard.js normally stops these keys at the window, before the page sees
     // them, and calls handleKey itself. These listeners are the fallback for when it
     // isn't loaded.
@@ -283,21 +363,38 @@
     });
     for (const type of ['keyup', 'keypress']) noteArea.addEventListener(type, (e) => e.stopPropagation());
 
+    // "Ctrl Enter save · Esc cancel", with the keys drawn as keys.
     const hint = document.createElement('span');
     hint.className = 'hint';
-    hint.textContent = /Mac|iP(hone|ad)/.test(navigator.platform) ? '⌘↵ to save' : 'Ctrl+Enter to save';
-    const cancel = textButton('note-cancel', 'Cancel');
+    const key = (label) => {
+      const k = document.createElement('kbd');
+      k.textContent = label;
+      return k;
+    };
+    const mac = /Mac|iP(hone|ad)/.test(navigator.platform);
+    hint.append(key(mac ? '⌘' : 'Ctrl'), key(mac ? 'Return' : 'Enter'), ' save · ', key('Esc'), ' cancel');
     const save = textButton('note-save', 'Save');
     save.classList.add('primary');
+    save.prepend(svgIcon('check'));
     const row = document.createElement('div');
     row.className = 'row';
-    row.append(hint, cancel, save);
+    row.append(hint, save);
 
-    bar.append(heading, noteArea, row);
+    bar.append(noteArea, row);
     bar.hidden = false;
-    place(rect);
+    grow();
     noteArea.focus({ preventScroll: true });
     noteArea.setSelectionRange(text.length, text.length);
+  }
+
+  function svgIcon(name) {
+    const svg = document.createElementNS('http://www.w3.org/2000/svg', 'svg');
+    svg.setAttribute('viewBox', '0 0 24 24');
+    svg.setAttribute('aria-hidden', 'true');
+    const path = document.createElementNS('http://www.w3.org/2000/svg', 'path');
+    path.setAttribute('d', ICONS[name]);
+    svg.append(path);
+    return svg;
   }
 
   function noteValue() {

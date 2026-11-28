@@ -111,13 +111,23 @@
 
         const pinkMark = () => document.querySelector('mark.hl-mark[data-hl-color="pink"]');
         const greenMark = () => document.querySelector('mark.hl-mark[data-hl-color="green"]');
-        const showNoteEditor = () => HL.toolbar.showNote(pinkMark().getBoundingClientRect(), { text: NOTE_DRAFT });
+        // The same boxes content/main.js opens: the passage, in its color, above the text.
+        const showNoteEditor = () =>
+          HL.toolbar.showNote(pinkMark().getBoundingClientRect(), {
+            text: NOTE_DRAFT,
+            placeholder: 'Write your note…',
+            title: 'Add a note',
+            quote: pinkMark().textContent,
+            color: HL.colorValue('pink')
+          });
         const showLearnEditor = () =>
           HL.toolbar.showNote(greenMark().getBoundingClientRect(), {
             text: LEARN_QUESTION,
-            placeholder: LEARN_PROMPT,
-            title: 'Learn more · your question',
-            kind: 'question'
+            placeholder: 'Write your question…',
+            title: LEARN_PROMPT,
+            kind: 'question',
+            quote: greenMark().textContent,
+            color: HL.colorValue('green')
           });
 
         // Show the toolbars through the same mouseup handling a real click uses.
