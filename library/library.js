@@ -156,8 +156,8 @@
     const page = currentPage();
     if (!page.highlights.length) return [empty('No highlights on this page yet. Select some text to start.')];
     const shown = HL.data.filterAndSort([page], filters()).pages[0];
-    if (!shown) return [pageHead(page, 0), empty('No highlights match your search.')];
-    return [pageHead(page, shown.highlights.length), itemList(shown.highlights, page, false)];
+    if (!shown) return [empty('No highlights match your search.')];
+    return [pageCard(shown, { collapsible: false })];
   }
 
   function renderPages() {
@@ -209,34 +209,23 @@
     return out;
   }
 
-  // Heading for the "This page" view.
-  function pageHead(page, shownCount) {
-    const head = el('div', 'page-head');
-    head.dataset.key = page.key;
-    const title = el('span', 'title');
-    title.textContent = page.title;
-    title.title = page.url;
-    head.append(title);
-    if (shownCount) {
-      head.append(
-        iconButton('copy', 'Copy as Markdown', 'copy-page'),
-        iconButton('delete', `Delete ${shownCount} highlight${plural(shownCount)}`, 'delete-page')
-      );
-    }
-    return head;
-  }
-
-  function pageCard(page) {
-    const collapsed = state.collapsed.has(page.key);
+  // A page with its highlights. In "This page" it can't collapse, and the
+  // "Current tab" badge would only repeat the view's name.
+  function pageCard(page, { collapsible = true } = {}) {
+    const collapsed = collapsible && state.collapsed.has(page.key);
     const card = el('section', 'card');
     card.dataset.key = page.key;
-    card.classList.toggle('current', isCurrent(page.key));
+    card.classList.toggle('current', collapsible && isCurrent(page.key));
     card.classList.toggle('collapsed', collapsed);
 
     const head = el('div', 'card-head');
-    const toggle = iconButton('chevron', collapsed ? 'Expand' : 'Collapse', 'toggle');
-    toggle.classList.add('toggle');
-    toggle.setAttribute('aria-expanded', String(!collapsed));
+    head.classList.toggle('fixed', !collapsible);
+    let toggle = null;
+    if (collapsible) {
+      toggle = iconButton('chevron', collapsed ? 'Expand' : 'Collapse', 'toggle');
+      toggle.classList.add('toggle');
+      toggle.setAttribute('aria-expanded', String(!collapsed));
+    }
 
     const title = el('div', 'card-title');
     const link = el('a');
@@ -245,7 +234,7 @@
     link.dataset.action = 'open-page';
     appendWithHits(link, page.title, HL.data.searchTerms(state.query));
     const meta = el('span', 'meta muted');
-    if (isCurrent(page.key)) {
+    if (collapsible && isCurrent(page.key)) {
       const badge = el('span', 'badge');
       badge.textContent = 'Current tab';
       meta.append(badge);
@@ -255,7 +244,7 @@
     title.append(link, meta);
 
     head.append(
-      toggle,
+      ...(toggle ? [toggle] : []),
       favicon(page),
       title,
       iconButton('copy', 'Copy as Markdown', 'copy-page'),
@@ -268,10 +257,7 @@
   function itemList(highlights, page, showPage) {
     const list = el('ul', 'items');
     list.append(...highlights.map((h) => item(h, page, showPage)));
-    if (state.view !== 'page') return list;
-    const box = el('div', 'timeline');
-    box.append(list);
-    return box;
+    return list;
   }
 
   function item(h, page, showPage) {
@@ -333,31 +319,31 @@
     const body = el('div', 'item-body');
     body.append(main);
     if (noteEl) body.append(noteEl);
-    // The meta line and the quick actions share a row when there's room.
+    // The meta line and the tools share a row when there's room. The tools are the
+    // quick actions (always visible, so notes and Learn more are easy to find) and
+    // the color/copy/delete icons, which show on hover but keep their place so
+    // nothing ever covers the quick actions.
     const foot = el('div', 'item-foot');
-    foot.append(meta);
-    body.append(foot);
-    if (editing) {
-      body.append(noteEditor());
-    } else {
-      // Always visible, so notes and Learn more are easy to find.
-      const quick = el('div', 'quick');
-      if (!note) quick.append(pillButton('note', 'Add note', 'note'));
-      quick.append(
+    const tools = el('div', 'tools');
+    if (!editing) {
+      if (!note) tools.append(pillButton('note', 'Add note', 'note'));
+      tools.append(
         h.learn
           ? pillButton('check', 'Got it', 'learn', 'Got it: clear Learn more')
           : pillButton('learn', 'Learn more', 'learn', 'Mark to learn more and write what to look into')
       );
-      quick.lastChild.classList.add('learn', ...(h.learn ? ['on'] : []));
-      foot.append(quick);
+      tools.lastChild.classList.add('learn', ...(h.learn ? ['on'] : []));
     }
-
     const actions = el('div', 'item-actions');
     actions.append(
       ...(h.bookmark ? [] : [iconButton('palette', 'Change color', 'pick')]), // bookmarks have no color
       iconButton('copy', 'Copy text', 'copy'),
       iconButton('delete', h.bookmark ? 'Delete bookmark' : 'Delete highlight', 'delete')
     );
+    tools.append(actions);
+    foot.append(meta, tools);
+    body.append(foot);
+    if (editing) body.append(noteEditor());
 
     const swatches = el('div', 'swatches');
     const choices = HL.palette(settings);
@@ -373,8 +359,9 @@
       b.style.background = HL.colorValue(name);
       swatches.append(b);
     }
+    actions.append(swatches); // opens under the color button
 
-    li.append(bar, body, actions, swatches);
+    li.append(bar, body);
     return li;
   }
 
