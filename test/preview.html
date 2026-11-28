@@ -20,6 +20,8 @@
                                 [{ url, title, highlights: [{ id, color, text, daysAgo, note?, bookmark?, learn? }] }]
            view=page|pages|timeline|learn, search=<text>   (library) starting view and search
            menu                 (library) open the export/import menu
+           colors=<hex,hex>     custom colors to add to the palette (codes without #)
+           addcolor             (popup) open the add-a-color form
          Reload to re-open the UI. store/screenshots/capture.ps1 uses this page. -->
     <iframe id="site" title="Page"></iframe>
     <script src="chrome-stub.js"></script>
@@ -56,9 +58,14 @@
         const page = params.get('page') || 'test-page.html?stub';
         const onRight = params.get('side') === 'right';
         const float = params.has('float');
-        const width = { popup: 340, panel: 380, tab: 820 }[ui] || 340;
+        const width = { popup: 360, panel: 380, tab: 820 }[ui] || 360;
         window.__hlStubInTab = ui === 'tab';
         if (params.has('seed')) await seed(params.get('seed'));
+        if (params.has('colors')) {
+          const { settings = {} } = await chrome.storage.local.get('settings');
+          const customColors = params.get('colors').split(',').map((c) => '#' + c);
+          await chrome.storage.local.set({ settings: { ...settings, customColors } });
+        }
 
         const frame = document.getElementById('site');
         if (page === 'none') {
@@ -128,6 +135,11 @@
             s.onload = resolve;
             document.body.append(s);
           });
+        }
+
+        if (ui === 'popup' && params.has('addcolor')) {
+          await new Promise((resolve) => setTimeout(resolve, 300));
+          document.getElementById('addButton').click();
         }
 
         // Library starting state.

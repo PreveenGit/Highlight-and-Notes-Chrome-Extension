@@ -3,43 +3,84 @@
   box-sizing: border-box;
 }
 
+/* Elements below set their own display; hidden must still win. */
+[hidden] {
+  display: none !important;
+}
+
 body {
-  width: 340px;
+  width: 360px;
   margin: 0;
   background: var(--bg);
   color: var(--fg);
-  font: 13px/1.4 system-ui, sans-serif;
+  font: 13px/1.4 system-ui, -apple-system, 'Segoe UI', sans-serif;
 }
 
-header {
+.muted {
+  color: var(--muted);
+}
+
+/* Small headings inside the popup ("On this page", "Highlight colors"). */
+.label {
+  color: var(--muted);
+  font-size: 11px;
+  font-weight: 600;
+  letter-spacing: 0.03em;
+}
+
+/* ---- Header -------------------------------------------------------------- */
+
+.top {
   display: flex;
   align-items: center;
-  gap: 8px;
-  padding: 12px 14px;
-  border-bottom: 1px solid var(--line);
+  gap: 10px;
+  padding: 12px 10px 12px 14px;
+}
+
+.logo {
+  flex: none;
+  border-radius: 8px;
+}
+
+.brand {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
 }
 
 h1 {
   margin: 0;
   font-size: 15px;
-  font-weight: 600;
+  font-weight: 650;
+  letter-spacing: -0.01em;
 }
 
-#count {
-  margin-left: auto;
+.site {
+  overflow: hidden;
+  color: var(--muted);
+  font-size: 11.5px;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+}
+
+.site:empty {
+  display: none;
 }
 
 .icon-btn {
+  flex: none;
   display: grid;
   place-items: center;
-  width: 26px;
-  height: 26px;
+  width: 32px;
+  height: 32px;
   padding: 0;
   border: 0;
-  border-radius: 6px;
+  border-radius: 10px;
   background: none;
   color: var(--muted);
   cursor: pointer;
+  transition: background-color 0.12s, color 0.12s;
 }
 
 .icon-btn:hover {
@@ -48,21 +89,15 @@ h1 {
 }
 
 .icon-btn svg {
-  width: 17px;
-  height: 17px;
+  width: 18px;
+  height: 18px;
   fill: currentColor;
 }
 
-.muted {
-  color: var(--muted);
-}
+/* ---- This page ----------------------------------------------------------- */
 
-section {
-  padding: 10px 14px;
-}
-
-section p {
-  margin: 4px 0;
+main {
+  padding: 0 12px 12px;
 }
 
 /* "Continue reading": the page's bookmark as a card. */
@@ -71,10 +106,10 @@ section p {
   align-items: center;
   gap: 10px;
   width: 100%;
-  margin: 0 0 10px;
+  margin: 0 0 12px;
   padding: 10px 12px 10px 10px;
   border: 1px solid color-mix(in srgb, var(--accent) 35%, var(--line));
-  border-radius: 10px;
+  border-radius: 12px;
   background: color-mix(in srgb, var(--accent) 7%, var(--bg));
   color: var(--fg);
   font: inherit;
@@ -157,21 +192,48 @@ section p {
   transform: translateX(2px);
 }
 
+.list-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0 4px 6px;
+}
+
+.count {
+  min-width: 22px;
+  padding: 1px 8px;
+  border-radius: 999px;
+  background: var(--hover);
+  color: var(--muted);
+  font-size: 11px;
+  font-weight: 600;
+  text-align: center;
+}
+
+.count:empty {
+  display: none;
+}
+
 #list {
-  list-style: none;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  max-height: 250px;
   margin: 0;
   padding: 0;
-  max-height: 300px;
   overflow-y: auto;
+  list-style: none;
+  scrollbar-width: thin;
 }
 
 #list li {
   display: flex;
-  align-items: flex-start;
-  gap: 8px;
-  padding: 6px;
-  border-radius: 6px;
+  align-items: stretch;
+  gap: 10px;
+  padding: 8px 6px 8px 8px;
+  border-radius: 10px;
   cursor: pointer;
+  transition: background-color 0.12s;
 }
 
 #list li:hover {
@@ -183,38 +245,15 @@ section p {
   opacity: 0.55;
 }
 
-.dot {
+/* The highlight's color as a bar; a bookmark's bar is the accent color. */
+.bar {
   flex: none;
-  width: 12px;
-  height: 12px;
-  margin-top: 3px;
-  border-radius: 50%;
-  border: 1px solid rgba(0, 0, 0, 0.2);
+  width: 4px;
+  border-radius: 2px;
 }
 
-/* Marked "learn more": a small "?" after the text, as on the page. */
-.learn-badge {
-  display: inline-block;
-  width: 14px;
-  height: 14px;
-  margin-left: 5px;
-  border-radius: 50%;
-  background: var(--learn);
-  color: var(--bg);
-  font: 700 10px/14px system-ui, sans-serif;
-  text-align: center;
-  vertical-align: 1px;
-}
-
-/* A bookmark: a ribbon instead of a color dot. */
-.dot.bookmark {
-  width: 10px;
-  height: 13px;
-  margin: 2px 1px 0;
-  border: 0;
-  border-radius: 0;
+.bar.bookmark {
   background: var(--accent);
-  clip-path: polygon(0 0, 100% 0, 100% 100%, 50% 72%, 0 100%);
 }
 
 .body {
@@ -224,10 +263,10 @@ section p {
 
 .text {
   display: -webkit-box;
-  -webkit-line-clamp: 3;
-  -webkit-box-orient: vertical;
   overflow: hidden;
   word-break: break-word;
+  -webkit-line-clamp: 3;
+  -webkit-box-orient: vertical;
 }
 
 .note {
@@ -236,12 +275,40 @@ section p {
   color: var(--muted);
 }
 
+/* Small tags after the text: a bookmark, or "learn more" (a "?" as on the page). */
+.tag {
+  display: inline-block;
+  margin-left: 6px;
+  padding: 0 6px;
+  border-radius: 999px;
+  background: var(--accent);
+  color: var(--bg);
+  font-size: 10px;
+  font-weight: 600;
+  line-height: 15px;
+  vertical-align: 1px;
+}
+
+.learn-badge {
+  display: inline-block;
+  width: 15px;
+  height: 15px;
+  margin-left: 5px;
+  border-radius: 50%;
+  background: var(--learn);
+  color: var(--bg);
+  font: 700 10px/15px system-ui, sans-serif;
+  text-align: center;
+  vertical-align: 1px;
+}
+
 /* The user's own note on a highlight (read-only here; edit on the page or in the library). */
 .user-note {
   display: -webkit-box;
-  margin-top: 3px;
-  padding-left: 7px;
-  border-left: 2px solid var(--line);
+  margin-top: 4px;
+  padding: 3px 8px;
+  border-radius: 6px;
+  background: color-mix(in srgb, var(--fg) 5%, transparent);
   color: var(--muted);
   font-size: 12px;
   white-space: pre-wrap;
@@ -253,62 +320,357 @@ section p {
 
 .remove {
   flex: none;
-  visibility: hidden;
-  width: 20px;
-  height: 20px;
+  align-self: flex-start;
+  display: grid;
+  place-items: center;
+  width: 24px;
+  height: 24px;
   padding: 0;
   border: 0;
-  border-radius: 4px;
+  border-radius: 8px;
   background: none;
   color: var(--muted);
-  font-size: 15px;
-  line-height: 1;
+  opacity: 0;
   cursor: pointer;
+  transition: opacity 0.12s, background-color 0.12s, color 0.12s;
 }
 
 #list li:hover .remove,
 .remove:focus-visible {
-  visibility: visible;
+  opacity: 1;
 }
 
 .remove:hover {
-  background: var(--line);
-  color: var(--fg);
-}
-
-.actions {
-  display: flex;
-  gap: 8px;
-  margin-top: 10px;
-}
-
-.actions button {
-  flex: 1;
-  padding: 6px 10px;
-  border: 1px solid var(--line);
-  border-radius: 6px;
-  background: none;
-  color: var(--fg);
-  font: inherit;
-  cursor: pointer;
-}
-
-.actions button:hover:not(:disabled) {
-  background: var(--hover);
-}
-
-.actions button:disabled {
-  opacity: 0.5;
-  cursor: default;
-}
-
-.actions .danger {
+  background: color-mix(in srgb, var(--danger) 14%, transparent);
   color: var(--danger);
 }
 
-footer {
-  padding: 10px 14px 12px;
-  border-top: 1px solid var(--line);
+.remove svg {
+  width: 16px;
+  height: 16px;
+  fill: currentColor;
+}
+
+/* Empty and unavailable states. */
+.state {
+  padding: 16px 20px 18px;
+  text-align: center;
+}
+
+.state p {
+  margin: 0;
+}
+
+.state-icon {
+  display: inline-grid;
+  place-items: center;
+  width: 44px;
+  height: 44px;
+  margin-bottom: 8px;
+  border-radius: 14px;
+  background: color-mix(in srgb, var(--accent) 12%, var(--bg));
+  color: var(--accent);
+}
+
+.state-icon svg {
+  width: 22px;
+  height: 22px;
+  fill: currentColor;
+}
+
+.state-title {
+  margin-bottom: 2px !important;
+  font-weight: 600;
+}
+
+.actions {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 8px;
+  margin-top: 12px;
+}
+
+/* ---- Buttons ------------------------------------------------------------- */
+
+.btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  height: 34px;
+  padding: 0 12px;
+  border: 1px solid var(--line);
+  border-radius: 999px;
+  background: var(--bg);
+  color: var(--fg);
+  font: inherit;
+  font-weight: 600;
+  white-space: nowrap;
+  cursor: pointer;
+  transition: background-color 0.12s, border-color 0.12s, transform 0.12s;
+}
+
+.btn:hover:not(:disabled) {
+  background: var(--hover);
+}
+
+.btn:active:not(:disabled) {
+  transform: scale(0.97);
+}
+
+.btn:disabled {
+  opacity: 0.45;
+  cursor: default;
+}
+
+.btn svg {
+  flex: none;
+  width: 16px;
+  height: 16px;
+  fill: currentColor;
+}
+
+.btn.danger {
+  color: var(--danger);
+}
+
+.btn.danger:hover:not(:disabled) {
+  border-color: color-mix(in srgb, var(--danger) 40%, var(--line));
+  background: color-mix(in srgb, var(--danger) 9%, var(--bg));
+}
+
+.btn.primary {
+  border-color: var(--accent);
+  background: var(--accent);
+  color: var(--bg);
+}
+
+.btn.primary:hover:not(:disabled) {
+  background: color-mix(in srgb, var(--accent) 88%, var(--fg));
+}
+
+.btn.small {
+  height: 30px;
+  padding: 0 12px;
+  font-size: 12px;
+}
+
+/* ---- Settings ------------------------------------------------------------ */
+
+.settings {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  margin: 0 12px 12px;
+  padding: 12px;
+  border: 1px solid var(--line);
+  border-radius: 14px;
+  background: var(--surface);
+}
+
+.setting-head {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 8px;
+}
+
+.hint {
+  color: var(--muted);
+  font-size: 11px;
+}
+
+.colors {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  padding: 2px 0 12px;
+  border-bottom: 1px solid var(--line);
+}
+
+.swatch {
+  position: relative;
+  display: grid;
+  place-items: center;
+  width: 28px;
+  height: 28px;
+  padding: 0;
+  border: 0;
+  border-radius: 50%;
+  box-shadow: inset 0 0 0 1px rgba(0, 0, 0, 0.15);
+  cursor: pointer;
+  transition: transform 0.12s, box-shadow 0.12s;
+}
+
+.swatch:hover {
+  transform: scale(1.1);
+}
+
+/* The default color: a ring and a check mark in a color that reads on it. */
+.swatch[aria-checked='true'] {
+  box-shadow: inset 0 0 0 1px rgba(0, 0, 0, 0.15), 0 0 0 2px var(--surface), 0 0 0 4px var(--accent);
+}
+
+.swatch[aria-checked='true']::after {
+  content: '';
+  width: 5px;
+  height: 10px;
+  margin-top: -3px;
+  border: solid currentColor;
+  border-width: 0 2px 2px 0;
+  transform: rotate(45deg);
+}
+
+/* A custom color: a small remove button appears on hover. */
+.swatch-wrap {
+  position: relative;
+  display: inline-grid;
+}
+
+.swatch-remove {
+  position: absolute;
+  top: -6px;
+  right: -6px;
+  display: grid;
+  place-items: center;
+  width: 17px;
+  height: 17px;
+  padding: 0;
+  border: 2px solid var(--surface);
+  border-radius: 50%;
+  background: var(--fg);
+  color: var(--bg);
+  opacity: 0;
+  cursor: pointer;
+  transition: opacity 0.12s;
+}
+
+.swatch-wrap:hover .swatch-remove,
+.swatch-remove:focus-visible {
+  opacity: 1;
+}
+
+.swatch-remove svg {
+  width: 11px;
+  height: 11px;
+  fill: currentColor;
+}
+
+.swatch.add {
+  border: 1.5px dashed color-mix(in srgb, var(--muted) 70%, transparent);
+  background: none;
+  box-shadow: none;
+  color: var(--muted);
+}
+
+.swatch.add:hover,
+.swatch.add[aria-expanded='true'] {
+  border-color: var(--accent);
+  color: var(--accent);
+}
+
+.swatch.add svg {
+  width: 16px;
+  height: 16px;
+  fill: currentColor;
+}
+
+.add-color {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  margin: 0;
+  padding: 10px;
+  border: 1px solid var(--line);
+  border-radius: 12px;
+  background: var(--bg);
+}
+
+.add-color[hidden] {
+  display: none;
+}
+
+.suggestions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+
+.suggestions button {
+  width: 22px;
+  height: 22px;
+  padding: 0;
+  border: 0;
+  border-radius: 50%;
+  box-shadow: inset 0 0 0 1px rgba(0, 0, 0, 0.15);
+  cursor: pointer;
+  transition: transform 0.12s;
+}
+
+.suggestions button:hover {
+  transform: scale(1.12);
+}
+
+.suggestions button[aria-pressed='true'] {
+  box-shadow: inset 0 0 0 1px rgba(0, 0, 0, 0.15), 0 0 0 2px var(--bg), 0 0 0 3.5px var(--accent);
+}
+
+.code-row {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+input[type='color'] {
+  flex: none;
+  width: 32px;
+  height: 30px;
+  padding: 0;
+  border: 0;
+  background: none;
+  cursor: pointer;
+}
+
+input[type='color']::-webkit-color-swatch-wrapper {
+  padding: 0;
+}
+
+input[type='color']::-webkit-color-swatch {
+  border: 1px solid rgba(0, 0, 0, 0.15);
+  border-radius: 8px;
+}
+
+#colorCode {
+  flex: 1;
+  min-width: 0;
+  height: 30px;
+  padding: 0 9px;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  background: var(--bg);
+  color: var(--fg);
+  font: 12.5px ui-monospace, 'Cascadia Mono', Consolas, monospace;
+  text-transform: uppercase;
+}
+
+#colorCode::placeholder {
+  color: var(--muted);
+}
+
+#colorCode:focus {
+  border-color: var(--accent);
+  outline: none;
+  box-shadow: 0 0 0 3px color-mix(in srgb, var(--accent) 25%, transparent);
+}
+
+#colorCode[aria-invalid='true'] {
+  border-color: var(--danger);
+}
+
+.error {
+  margin: -2px 0 0;
+  color: var(--danger);
+  font-size: 12px;
 }
 
 .row {
@@ -316,32 +678,53 @@ footer {
   align-items: center;
   justify-content: space-between;
   gap: 8px;
-  min-height: 28px;
+  min-height: 26px;
 }
 
-.colors {
-  display: flex;
-  gap: 6px;
-}
-
-.colors button {
-  width: 18px;
-  height: 18px;
-  padding: 0;
-  border: 1px solid rgba(0, 0, 0, 0.2);
-  border-radius: 50%;
+/* A checkbox drawn as a switch. */
+.switch {
+  position: relative;
+  flex: none;
+  width: 34px;
+  height: 20px;
+  margin: 0;
+  border-radius: 999px;
+  background: color-mix(in srgb, var(--muted) 45%, transparent);
   cursor: pointer;
+  transition: background-color 0.15s;
+  appearance: none;
 }
 
-.colors button[aria-checked='true'] {
-  box-shadow: 0 0 0 2px var(--bg), 0 0 0 4px var(--accent);
+.switch::before {
+  content: '';
+  position: absolute;
+  top: 2px;
+  left: 2px;
+  width: 16px;
+  height: 16px;
+  border-radius: 50%;
+  background: #fff;
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.3);
+  transition: transform 0.15s;
+}
+
+.switch:checked {
+  background: var(--accent);
+}
+
+.switch:checked::before {
+  transform: translateX(14px);
 }
 
 kbd {
-  padding: 1px 5px;
+  margin-left: 4px;
+  padding: 1px 6px;
   border: 1px solid var(--line);
-  border-radius: 4px;
-  font: 12px ui-monospace, monospace;
+  border-bottom-width: 2px;
+  border-radius: 6px;
+  background: var(--bg);
+  color: var(--fg);
+  font: 11.5px ui-monospace, 'Cascadia Mono', Consolas, monospace;
 }
 
 .link {
@@ -350,11 +733,22 @@ kbd {
   background: none;
   color: var(--accent);
   font: inherit;
+  font-weight: 600;
   cursor: pointer;
+}
+
+.link:hover {
+  text-decoration: underline;
 }
 
 button:focus-visible,
 input:focus-visible {
   outline: 2px solid var(--accent);
   outline-offset: 2px;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  * {
+    transition: none !important;
+  }
 }

@@ -155,7 +155,7 @@
     return HL.withNote(
       {
         id: h.id,
-        color: HL.COLORS[h.color] ? h.color : 'yellow',
+        color: HL.isColor(h.color) ? h.color : HL.parseHex(h.color) || 'yellow', // built-in name or custom "#rrggbb"
         text: str(h.text) || h.quote.exact,
         quote: { exact: h.quote.exact, prefix: str(h.quote.prefix), suffix: str(h.quote.suffix) },
         position,

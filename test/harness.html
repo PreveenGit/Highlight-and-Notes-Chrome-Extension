@@ -80,6 +80,36 @@
         eq(marker.getMarks('a').every((m) => m.dataset.hlColor === 'pink'), true, 'all pink');
       });
 
+      test('custom colors paint their code, with white text on dark ones', () => {
+        setup(CROSS);
+        marker.wrapRange(rangeOver('bold', 'link'), 'a', '#1e3a8a');
+        const marks = marker.getMarks('a');
+        eq(marks.every((m) => m.style.getPropertyValue('background-color') === 'rgb(30, 58, 138)'), true, 'custom fill');
+        eq(marks.every((m) => m.style.getPropertyValue('color') === 'rgb(255, 255, 255)'), true, 'white text');
+        marker.recolor('a', '#fef08a');
+        eq(marks.every((m) => m.style.getPropertyValue('color') === 'rgb(17, 17, 17)'), true, 'dark text on a light color');
+        marker.setBookmark('a');
+        eq(marks.every((m) => m.style.getPropertyValue('color') === ''), true, 'bookmark keeps the page text color');
+      });
+
+      test('color helpers: codes, labels, contrast and the palette', () => {
+        eq(HL.parseHex('#ABC'), '#aabbcc', 'short code');
+        eq(HL.parseHex(' a1B2c3 '), '#a1b2c3', 'no # and spaces');
+        eq(HL.parseHex('#12345'), null, 'bad length');
+        eq(HL.parseHex('red'), null, 'not a code');
+        eq(HL.isColor('yellow') && HL.isColor('#a1b2c3'), true, 'name and code');
+        eq(HL.isColor('#A1B2C3') || HL.isColor('toString') || HL.isColor(''), false, 'stored codes are lower case; no inherited names');
+        eq(HL.colorValue('nope'), HL.COLORS.yellow, 'unknown falls back to yellow');
+        eq(HL.colorLabel('#a1b2c3') + ' ' + HL.colorLabel('pink'), '#A1B2C3 pink', 'labels');
+        eq(HL.textOn('yellow') + ' ' + HL.textOn('#000000') + ' ' + HL.textOn('#ffffff'), '#111 #fff #111', 'text color');
+        const settings = { customColors: ['#ABC', 'nope', '#aabbcc', '#111111', '#222222', '#333333', '#444444', '#555555'] };
+        eq(HL.customColors(settings).join(), '#aabbcc,#111111,#222222,#333333,#444444', 'cleaned, deduped, at most 5');
+        eq(HL.palette(settings).length, HL.COLOR_NAMES.length + 5, 'palette');
+        eq(HL.cleanSettings({ defaultColor: 'purple' }).defaultColor, 'yellow', 'bad default color');
+        eq(HL.cleanSettings({ defaultColor: '#aabbcc' }).defaultColor, '#aabbcc', 'custom default kept');
+        eq(HL.cleanSettings(undefined).customColors.length, 0, 'defaults');
+      });
+
       test('anchor round-trips through save and restore', () => {
         const index = setup(CROSS);
         const saved = anchor.fromRange(index, rangeOver('lo', 'Sec'));
@@ -440,6 +470,28 @@
         eq(l1.learn, true, 'flag kept');
         eq('learn' in l2, false, 'non-boolean dropped');
         eq(HL.data.parseBackup(JSON.stringify(HL.data.toBackup(pages)))[0].highlights[0].learn, true, 'round trip');
+      });
+
+      test('backup keeps custom colors and cleans bad ones', () => {
+        const pages = HL.data.parseBackup(
+          JSON.stringify({
+            format: 'highlight-backup',
+            version: 1,
+            pages: [
+              {
+                url: 'https://a.test/',
+                highlights: [
+                  { id: 'c1', quote: { exact: 'a' }, color: '#a1b2c3' },
+                  { id: 'c2', quote: { exact: 'b' }, color: '#ABC' },
+                  { id: 'c3', quote: { exact: 'c' }, color: 'purple' }
+                ]
+              }
+            ]
+          })
+        );
+        eq(pages[0].highlights.map((h) => h.color).join(), '#a1b2c3,#aabbcc,yellow', 'colors');
+        const filtered = HL.data.filterAndSort(pages.map((p) => ({ ...p, title: '', site: '', firstAt: 0, lastAt: 0 })), { colors: ['#a1b2c3'] });
+        eq(filtered.count, 1, 'color filter on a custom color');
       });
 
       test('merging keeps existing highlights and skips duplicates', () => {

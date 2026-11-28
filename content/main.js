@@ -243,6 +243,7 @@
     }
     if (action === 'learn' && toggleLearn()) return; // note editor open: keep activeId
     if (action === 'color') {
+      if (!HL.isColor(value)) return;
       if (activeId) recolor(activeId, value);
       else highlightRange(pendingRange, value);
       rememberColor(value);
@@ -299,7 +300,7 @@
     let rect = Array.from(range.getClientRects()).find((r) => r.width && r.height);
     if (!rect && fallbackPoint) rect = pointRect(fallbackPoint);
     if (!rect) return false;
-    HL.toolbar.show(rect, { mode: 'create', color: settings.defaultColor });
+    HL.toolbar.show(rect, { mode: 'create', color: settings.defaultColor, colors: HL.palette(settings) });
     return true;
   }
 
@@ -307,9 +308,14 @@
     activeId = mark.dataset.hlId;
     pendingRange = null;
     const saved = HL.store.get(activeId);
+    const color = mark.dataset.hlColor;
+    // A custom color removed from the palette still shows for highlights that use it.
+    const colors = HL.palette(settings);
+    if (HL.isColor(color) && !colors.includes(color)) colors.push(color);
     HL.toolbar.show(mark.getBoundingClientRect(), {
       mode: 'edit',
-      color: mark.dataset.hlColor,
+      color,
+      colors,
       hasNote: !!HL.noteOf(saved),
       bookmark: !!(saved && saved.bookmark),
       learn: !!(saved && saved.learn)
@@ -374,7 +380,7 @@
     chrome.storage.onChanged.addListener((changes, area) => {
       const change = changes[HL.SETTINGS_KEY];
       if (area !== 'local' || !change) return;
-      settings = { ...HL.DEFAULT_SETTINGS, ...change.newValue };
+      settings = HL.cleanSettings(change.newValue);
       if (!settings.showToolbar && pendingRange) HL.toolbar.hide();
     });
 

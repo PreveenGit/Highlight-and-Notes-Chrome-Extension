@@ -29,7 +29,7 @@ $inPreview = [uri]::EscapeDataString("../${article}marks") # article as the page
 $shots = [ordered]@{
   '1-highlight.png'  = "${article}toolbar"
   '2-side-panel.png' = "test/preview.html?ui=panel&side=right&seed=$library&page=$inPreview"
-  '3-bookmark.png'   = "test/preview.html?ui=popup&float&page=$inPreview"
+  '3-bookmark.png'   = "test/preview.html?ui=popup&float&colors=c4b5fd,99f6e4&page=$inPreview"
   '4-to-learn.png'   = "test/preview.html?ui=tab&page=none&seed=$library&view=learn"
   '5-backup.png'     = "test/preview.html?ui=tab&page=none&seed=$library&menu"
 }

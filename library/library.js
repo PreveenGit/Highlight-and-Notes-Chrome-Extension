@@ -34,13 +34,17 @@
     editing: null // note being edited: { key, id, draft }; survives re-renders
   };
   let pages = []; // every stored page (HL.data.toPages)
+  let settings = HL.cleanSettings(); // for the palette (custom colors)
   let current = null; // side panel: the active tab's page, as its content script reports it
 
   // ---- Data ----------------------------------------------------------------
 
   async function reload() {
-    pages = HL.data.toPages(await chrome.storage.local.get(null));
+    const all = await chrome.storage.local.get(null);
+    pages = HL.data.toPages(all);
+    settings = HL.cleanSettings(all[HL.SETTINGS_KEY]);
     if (!inTab) current = await loadCurrent();
+    buildColorChips();
     render();
   }
 
@@ -277,7 +281,7 @@
     li.classList.toggle('bookmark', !!h.bookmark);
 
     const bar = el('span', 'bar');
-    bar.style.background = h.bookmark ? 'var(--accent)' : HL.COLORS[h.color] || HL.COLORS.yellow;
+    bar.style.background = h.bookmark ? 'var(--accent)' : HL.colorValue(h.color);
 
     const terms = HL.data.searchTerms(state.query);
     const note = HL.noteOf(h);
@@ -339,15 +343,17 @@
     );
 
     const swatches = el('div', 'swatches');
-    for (const name of HL.COLOR_NAMES) {
+    const choices = HL.palette(settings);
+    if (!h.bookmark && HL.isColor(h.color) && !choices.includes(h.color)) choices.push(h.color); // a removed custom color
+    for (const name of choices) {
       const b = el('button');
       b.type = 'button';
       b.dataset.action = 'color';
       b.dataset.color = name;
-      b.title = name;
-      b.setAttribute('aria-label', `Change to ${name}`);
+      b.title = HL.colorLabel(name);
+      b.setAttribute('aria-label', `Change to ${HL.colorLabel(name)}`);
       b.setAttribute('aria-current', String(name === h.color));
-      b.style.background = HL.COLORS[name];
+      b.style.background = HL.colorValue(name);
       swatches.append(b);
     }
 
@@ -422,19 +428,30 @@
     return img;
   }
 
+  // Filter chips: the palette, plus any other color still used by a highlight
+  // (a custom color since removed from the palette).
   function buildColorChips() {
+    const colors = HL.palette(settings);
+    for (const page of pages) {
+      for (const h of page.highlights) {
+        if (!h.bookmark && HL.isColor(h.color) && !colors.includes(h.color)) colors.push(h.color);
+      }
+    }
+    for (const c of state.colors) if (!colors.includes(c)) state.colors.delete(c);
     $('colors').replaceChildren(
-      ...HL.COLOR_NAMES.map((name) => {
+      ...colors.map((name) => {
+        const label = HL.colorLabel(name);
         const b = el('button');
         b.type = 'button';
         b.dataset.color = name;
-        b.title = `Only ${name}`;
-        b.setAttribute('aria-label', `Show ${name} highlights`);
-        b.setAttribute('aria-pressed', 'false');
-        b.style.background = HL.COLORS[name];
+        b.title = `Only ${label}`;
+        b.setAttribute('aria-label', `Show ${label} highlights`);
+        b.setAttribute('aria-pressed', String(state.colors.has(name)));
+        b.style.background = HL.colorValue(name);
         return b;
       })
     );
+    $('colors').classList.toggle('filtering', state.colors.size > 0);
   }
 
   function iconButton(icon, label, action) {
@@ -809,7 +826,8 @@
 
     // Live updates: highlights added or edited anywhere, and (side panel) tab switches.
     chrome.storage.onChanged.addListener((changes, area) => {
-      if (area === 'local' && Object.keys(changes).some((k) => k.startsWith(HL.PAGE_KEY_PREFIX))) scheduleReload();
+      if (area !== 'local') return;
+      if (Object.keys(changes).some((k) => k.startsWith(HL.PAGE_KEY_PREFIX) || k === HL.SETTINGS_KEY)) scheduleReload();
     });
     if (!inTab) {
       chrome.tabs.onActivated.addListener(scheduleReload);
@@ -821,7 +839,6 @@
   }
 
   // Start last, once every const above is initialized.
-  buildColorChips();
   bindEvents();
   await reload();
 })();

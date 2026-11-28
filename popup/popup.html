@@ -7,24 +7,29 @@
     <link rel="stylesheet" href="popup.css" />
   </head>
   <body>
-    <header>
-      <img src="../icons/icon32.png" alt="" width="20" height="20" />
-      <h1>Highlight</h1>
-      <span id="count" class="muted"></span>
+    <header class="top">
+      <img class="logo" src="../icons/icon32.png" alt="" width="28" height="28" />
+      <div class="brand">
+        <h1>Highlight</h1>
+        <span id="site" class="site"></span>
+      </div>
       <button id="sidePanel" type="button" class="icon-btn" title="All highlights in the side panel" aria-label="All highlights in the side panel">
-        <svg viewBox="0 0 24 24"><path d="M19 3H5a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2V5a2 2 0 0 0-2-2zm0 16h-5V5h5v14z" /></svg>
+        <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M19 3H5a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2V5a2 2 0 0 0-2-2zm0 16h-5V5h5v14z" /></svg>
       </button>
       <button id="library" type="button" class="icon-btn" title="All highlights in a tab" aria-label="All highlights in a tab">
-        <svg viewBox="0 0 24 24"><path d="M19 19H5V5h7V3H5a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14c1.1 0 2-.9 2-2v-7h-2v7zM14 3v2h3.59l-9.83 9.83 1.41 1.41L19 6.41V10h2V3h-7z" /></svg>
+        <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M19 19H5V5h7V3H5a2 2 0 0 0-2 2v14c0 1.1.9 2 2 2h14c1.1 0 2-.9 2-2v-7h-2v7zM14 3v2h3.59l-9.83 9.83 1.41 1.41L19 6.41V10h2V3h-7z" /></svg>
       </button>
     </header>
 
-    <section id="unavailable" hidden>
-      <p>Highlighting isn't available on this page.</p>
+    <section id="unavailable" class="state" hidden>
+      <span class="state-icon">
+        <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zM4 12c0-4.42 3.58-8 8-8 1.85 0 3.55.63 4.9 1.69L5.69 16.9C4.63 15.55 4 13.85 4 12zm8 8c-1.85 0-3.55-.63-4.9-1.69L18.31 7.1C19.37 8.45 20 10.15 20 12c0 4.42-3.58 8-8 8z" /></svg>
+      </span>
+      <p class="state-title">Highlighting isn't available on this page</p>
       <p class="muted">Chrome doesn't let extensions run on chrome:// pages, the Web Store or the PDF viewer. If you just installed the extension, reload the page.</p>
     </section>
 
-    <section id="page" hidden>
+    <main id="page" hidden>
       <button id="jump" type="button" class="jump" hidden>
         <span class="jump-icon">
           <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M17 3H7c-1.1 0-1.99.9-1.99 2L5 21l7-3 7 3V5c0-1.1-.9-2-2-2z" /></svg>
@@ -36,25 +41,57 @@
         </span>
         <svg class="jump-arrow" viewBox="0 0 24 24" aria-hidden="true"><path d="M12 4l-1.41 1.41L16.17 11H4v2h12.17l-5.58 5.59L12 20l8-8z" /></svg>
       </button>
-      <ul id="list"></ul>
-      <p id="empty" class="muted" hidden>No highlights on this page yet. Select some text to start.</p>
-      <div class="actions">
-        <button id="copy" type="button">Copy as Markdown</button>
-        <button id="clear" type="button" class="danger">Clear page</button>
-      </div>
-    </section>
 
-    <footer>
-      <div class="row">
-        <span>Default color</span>
-        <div id="colors" class="colors" role="radiogroup" aria-label="Default color"></div>
+      <div class="list-head">
+        <span class="label">On this page</span>
+        <span id="count" class="count"></span>
       </div>
+      <ul id="list"></ul>
+      <div id="empty" class="state" hidden>
+        <span class="state-icon">
+          <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M22 24H2v-4h20v4zM13.06 5.19l3.75 3.75L7.75 18H4v-3.75l9.06-9.06zm4.82 2.68-3.75-3.75 1.83-1.83a.996.996 0 0 1 1.41 0l2.34 2.34c.39.39.39 1.02 0 1.41l-1.83 1.83z" /></svg>
+        </span>
+        <p class="state-title">No highlights on this page yet</p>
+        <p class="muted">Select some text to start.</p>
+      </div>
+
+      <div class="actions">
+        <button id="copy" type="button" class="btn">
+          <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M16 1H4c-1.1 0-2 .9-2 2v14h2V3h12V1zm3 4H8c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h11c1.1 0 2-.9 2-2V7c0-1.1-.9-2-2-2zm0 16H8V7h11v14z" /></svg>
+          <span>Copy as Markdown</span>
+        </button>
+        <button id="clear" type="button" class="btn danger">
+          <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M6 19c0 1.1.9 2 2 2h8c1.1 0 2-.9 2-2V7H6v12zM19 4h-3.5l-1-1h-5l-1 1H5v2h14V4z" /></svg>
+          <span>Clear page</span>
+        </button>
+      </div>
+    </main>
+
+    <footer class="settings">
+      <div class="setting-head">
+        <span class="label">Highlight colors</span>
+        <span class="hint">Click one to make it the default</span>
+      </div>
+      <div id="colors" class="colors" role="radiogroup" aria-label="Default color"></div>
+
+      <!-- Adding a custom color: suggestions, the color picker, or a typed code. -->
+      <form id="addColor" class="add-color" hidden novalidate>
+        <div id="suggestions" class="suggestions" aria-label="Suggested colors"></div>
+        <div class="code-row">
+          <input id="colorPicker" type="color" value="#c4b5fd" aria-label="Pick a color" />
+          <input id="colorCode" type="text" maxlength="7" spellcheck="false" autocomplete="off" placeholder="#C4B5FD" aria-label="Color code" aria-describedby="colorError" />
+          <button type="submit" class="btn primary small">Add</button>
+          <button id="cancelColor" type="button" class="btn small">Cancel</button>
+        </div>
+        <p id="colorError" class="error" role="alert" hidden></p>
+      </form>
+
       <label class="row">
         <span>Show toolbar when selecting text</span>
-        <input id="showToolbar" type="checkbox" />
+        <input id="showToolbar" type="checkbox" class="switch" />
       </label>
-      <div class="row muted">
-        <span>Shortcut: <kbd id="shortcut">not set</kbd></span>
+      <div class="row">
+        <span class="muted">Shortcut <kbd id="shortcut">not set</kbd></span>
         <button id="shortcuts" type="button" class="link">Change</button>
       </div>
     </footer>

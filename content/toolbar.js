@@ -192,17 +192,18 @@
   //   current selection.
   // mode "edit": swatches to recolor plus note, learn more / got it, copy and delete
   //   for a clicked highlight. A clicked bookmark has no color, so no swatches.
-  function show(rect, { mode, color, hasNote = false, bookmark = false, learn = false }) {
+  // `colors` is the palette to offer: built-in names and the user's custom "#rrggbb".
+  function show(rect, { mode, color, colors = HL.COLOR_NAMES, hasNote = false, bookmark = false, learn = false }) {
     ensure();
     noteArea = null;
     bar.className = 'bar';
     bar.replaceChildren();
     if (!(mode === 'edit' && bookmark)) {
-      for (const name of HL.COLOR_NAMES) {
-        const swatch = button('color', `${mode === 'edit' ? 'Change to' : 'Highlight'} ${name}`);
+      for (const name of colors) {
+        const swatch = button('color', `${mode === 'edit' ? 'Change to' : 'Highlight'} ${HL.colorLabel(name)}`);
         swatch.className = 'swatch' + (mode === 'edit' && name === color ? ' active' : '');
         swatch.dataset.color = name;
-        swatch.style.background = HL.COLORS[name];
+        swatch.style.background = HL.colorValue(name);
         bar.append(swatch);
       }
       const sep = document.createElement('span');

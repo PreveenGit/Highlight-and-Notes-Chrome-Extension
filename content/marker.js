@@ -77,9 +77,11 @@
     return isInline(node.previousSibling) && isInline(node.nextSibling);
   }
 
+  // `color` is a built-in name or a custom "#rrggbb"; dark custom colors get white text.
   function paint(mark, color) {
     mark.dataset.hlColor = color;
-    mark.style.setProperty('background-color', HL.COLORS[color] || HL.COLORS.yellow, 'important');
+    mark.style.setProperty('background-color', HL.colorValue(color), 'important');
+    mark.style.setProperty('color', HL.textOn(color), 'important');
   }
 
   function getMarks(id) {
@@ -123,6 +125,7 @@
       mark.classList.add(BOOKMARK_CLASS);
       mark.classList.toggle(BOOKMARK_START_CLASS, i === 0);
       mark.style.removeProperty('background-color');
+      mark.style.removeProperty('color'); // keeps the page's own text color
     });
   }
 

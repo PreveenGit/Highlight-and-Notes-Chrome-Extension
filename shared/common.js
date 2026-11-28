@@ -12,12 +12,68 @@
     orange: '#ffcc80'
   };
   HL.COLOR_NAMES = Object.keys(HL.COLORS);
+  HL.MAX_CUSTOM_COLORS = 5;
 
   HL.PAGE_KEY_PREFIX = 'hl:';
   HL.SETTINGS_KEY = 'settings';
   HL.DEFAULT_SETTINGS = {
     defaultColor: 'yellow', // also the last color picked in the toolbar
-    showToolbar: true // show the color toolbar when text is selected
+    showToolbar: true, // show the color toolbar when text is selected
+    customColors: [] // the user's own colors ("#rrggbb"), shown after the built-in ones
+  };
+
+  // ---- Colors ---------------------------------------------------------------
+  // A highlight's `color` is a built-in name ("yellow") or a custom "#rrggbb".
+
+  // "#ABC", "abc", " #a1b2c3 " -> "#aabbcc" / "#a1b2c3"; anything else -> null.
+  HL.parseHex = function parseHex(input) {
+    const m = /^#?([0-9a-f]{3}|[0-9a-f]{6})$/i.exec(String(input || '').trim());
+    if (!m) return null;
+    const hex = m[1].length === 3 ? m[1].replace(/./g, (c) => c + c) : m[1];
+    return '#' + hex.toLowerCase();
+  };
+
+  HL.isColor = function isColor(color) {
+    return Object.hasOwn(HL.COLORS, color) || HL.parseHex(color) === color;
+  };
+
+  // The CSS color to paint; unknown values fall back to yellow.
+  HL.colorValue = function colorValue(color) {
+    if (Object.hasOwn(HL.COLORS, color)) return HL.COLORS[color];
+    return HL.parseHex(color) === color ? color : HL.COLORS.yellow;
+  };
+
+  // A name for people: "yellow", or the code in capitals ("#A1B2C3").
+  HL.colorLabel = function colorLabel(color) {
+    return Object.hasOwn(HL.COLORS, color) ? color : String(color).toUpperCase();
+  };
+
+  // Text color that reads best on `color`: near-black, or white on dark colors.
+  HL.textOn = function textOn(color) {
+    const hex = HL.colorValue(color).slice(1);
+    const [r, g, b] = [0, 2, 4].map((i) => {
+      const c = parseInt(hex.slice(i, i + 2), 16) / 255;
+      return c <= 0.03928 ? c / 12.92 : ((c + 0.055) / 1.055) ** 2.4;
+    });
+    const luminance = 0.2126 * r + 0.7152 * g + 0.0722 * b;
+    // Contrast with #111 (luminance ~0.0056) vs. with white.
+    return (luminance + 0.05) / 0.0556 >= 1.05 / (luminance + 0.05) ? '#111' : '#fff';
+  };
+
+  // The user's valid custom colors, without duplicates, at most MAX_CUSTOM_COLORS.
+  HL.customColors = function customColors(settings) {
+    const list = Array.isArray(settings && settings.customColors) ? settings.customColors : [];
+    const out = [];
+    for (const c of list) {
+      const hex = HL.parseHex(c);
+      if (hex && !out.includes(hex) && out.length < HL.MAX_CUSTOM_COLORS) out.push(hex);
+    }
+    return out;
+  };
+
+  // Every color to offer: the built-in ones, then the user's own.
+  HL.palette = function palette(settings) {
+    return [...HL.COLOR_NAMES, ...HL.customColors(settings)];
   };
 
   // Message types between popup/background and the content script.
@@ -107,9 +163,17 @@
     return 'just now';
   };
 
+  // Stored settings with defaults filled in and bad values replaced.
+  HL.cleanSettings = function cleanSettings(stored) {
+    const settings = { ...HL.DEFAULT_SETTINGS, ...stored };
+    settings.customColors = HL.customColors(settings);
+    if (!HL.isColor(settings.defaultColor)) settings.defaultColor = HL.DEFAULT_SETTINGS.defaultColor;
+    return settings;
+  };
+
   HL.getSettings = async function getSettings() {
     const data = await chrome.storage.local.get(HL.SETTINGS_KEY);
-    return { ...HL.DEFAULT_SETTINGS, ...data[HL.SETTINGS_KEY] };
+    return HL.cleanSettings(data[HL.SETTINGS_KEY]);
   };
 
   HL.setSettings = async function setSettings(patch) {

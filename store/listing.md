@@ -28,7 +28,8 @@ Read the web the way you read a good book: highlight what matters, write notes i
 
 HIGHLIGHT AS YOU READ
 Find the important parts again in seconds, instead of rereading the whole page.
-• Select text and pick one of five colors from the small toolbar, or press Alt+Shift+H. Use the colors to tell ideas, quotes and to-dos apart.
+• Select text and pick a color from the small toolbar, or press Alt+Shift+H. Use the colors to tell ideas, quotes and to-dos apart.
+• Make the palette yours: add up to five colors of your own from the toolbar icon, by color code (like #C4B5FD) or with the color picker.
 • Click a highlight to recolor it, copy it, or remove it.
 • Highlights come back automatically when you return to the page, even if the page has changed a little.
 
@@ -81,7 +82,7 @@ Works on most web pages. Chrome doesn't allow extensions on chrome:// pages, the
 | --- | --- |
 | `store/screenshots/1-highlight.png` | An article with highlights, note badges, a "?" (learn more) and a bookmarked line with its "Resume" tag; the toolbar over a selection shows the note, bookmark and learn-more buttons |
 | `store/screenshots/2-side-panel.png` | The side panel listing the page's highlights with notes, a Learn more item and the bookmark |
-| `store/screenshots/3-bookmark.png` | The toolbar popup with the Continue reading card, next to the bookmarked line and its "Resume" tag |
+| `store/screenshots/3-bookmark.png` | The toolbar popup with the Continue reading card and the color palette with custom colors, next to the bookmarked line and its "Resume" tag |
 | `store/screenshots/4-to-learn.png` | The library's To learn tab: passages marked to learn more, with questions, from several sites |
 | `store/screenshots/5-backup.png` | The full-tab library with the Export Markdown / Export backup / Import backup menu open |
 
@@ -130,4 +131,4 @@ GitHub Pages publishes `docs/` from the `main` branch of `PreveenGit/Highlight-a
 
 ## Test instructions tab (optional)
 
-> No account or setup is needed. Open any article, select a sentence, and click a color in the toolbar that appears (or press Alt+Shift+H). Click the highlight to recolor or delete it. Reload the page: the highlight is restored. In the toolbar, the speech-bubble button adds a note, the bookmark button bookmarks the line (the toolbar icon's popup then shows Continue reading), and the graduation-cap button marks a passage to learn more and asks for a question. Press Alt+Shift+L (or the side-panel button in the popup) to open the library; the To learn tab lists passages marked to learn more.
+> No account or setup is needed. Open any article, select a sentence, and click a color in the toolbar that appears (or press Alt+Shift+H). Click the highlight to recolor or delete it. Reload the page: the highlight is restored. In the toolbar, the speech-bubble button adds a note, the bookmark button bookmarks the line (the toolbar icon's popup then shows Continue reading), and the graduation-cap button marks a passage to learn more and asks for a question. In the popup, the "+" after the colors adds a custom color by code or picker. Press Alt+Shift+L (or the side-panel button in the popup) to open the library; the To learn tab lists passages marked to learn more.
