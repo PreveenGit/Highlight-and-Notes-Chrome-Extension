@@ -112,7 +112,14 @@
     }
     $('sort').hidden = state.view === 'page';
     const toLearn = learnCount();
-    document.querySelector('.views [data-view="learn"]').textContent = toLearn ? `To learn (${toLearn})` : 'To learn';
+    const learnTab = document.querySelector('.views [data-view="learn"]');
+    learnTab.replaceChildren('To learn');
+    if (toLearn) {
+      const count = el('span', 'view-count');
+      count.textContent = String(toLearn);
+      learnTab.append(count);
+    }
+    learnTab.setAttribute('aria-label', toLearn ? `To learn, ${toLearn}` : 'To learn');
     const view =
       state.view === 'page' ? renderCurrent()
       : state.view === 'pages' ? renderPages()
@@ -174,18 +181,108 @@
     return timelineList(timeline);
   }
 
-  // Every highlight marked "learn more", on any page, as a timeline.
+  // Every highlight marked "learn more", on any page: a header, then one study card
+  // per passage with its question first.
   function renderLearn() {
-    if (!learnCount()) {
+    const total = learnCount();
+    if (!total) {
       return [
         empty(
-          'Nothing marked to learn yet. Select text and click the graduation-cap button in the toolbar, or click a highlight and mark it to learn more.'
+          'Nothing marked to learn yet. Click Learn more on a highlight here, or select text on a page and click the graduation-cap button in the toolbar.',
+          'learn'
         )
       ];
     }
     const { timeline } = HL.data.filterAndSort(pages, filters());
-    if (!timeline.length) return [empty('Nothing to learn matches your search.')];
-    return timelineList(timeline);
+    if (!timeline.length) return [learnHeader(total, 0), empty('Nothing to learn matches your search.', 'learn')];
+    const list = el('ul', 'learn-list');
+    list.append(...timeline.slice(0, state.timelineLimit).map(({ highlight, page }) => learnCard(highlight, page)));
+    const out = [learnHeader(total, timeline.length), list];
+    const left = timeline.length - state.timelineLimit;
+    if (left > 0) {
+      const more = el('button', 'more');
+      more.type = 'button';
+      more.dataset.action = 'more';
+      more.textContent = `Show more (${left} left)`;
+      out.push(more);
+    }
+    return out;
+  }
+
+  function learnHeader(total, shown) {
+    const head = el('div', 'learn-head');
+    const icon = el('span', 'learn-head-icon');
+    icon.innerHTML = `<svg viewBox="0 0 24 24" aria-hidden="true"><path d="${ICONS.learn}"/></svg>`;
+    const text = el('div', 'learn-head-text');
+    const title = el('h2');
+    title.textContent = `${total} passage${plural(total)} to learn`;
+    const sub = el('p');
+    sub.textContent =
+      shown < total
+        ? `Showing ${shown} that match your filters.`
+        : 'Click a passage to read it in context. Click Got it once you understand it.';
+    text.append(title, sub);
+    head.append(icon, text);
+    return head;
+  }
+
+  // A passage to learn: the question (its note), the passage in its highlight
+  // color, where it's from, and Got it.
+  function learnCard(h, page) {
+    const card = el('li', 'learn-card');
+    card.dataset.key = page.key;
+    card.dataset.id = h.id;
+    const terms = HL.data.searchTerms(state.query);
+    const note = HL.noteOf(h);
+    const editing = !!state.editing && state.editing.id === h.id && state.editing.key === page.key;
+
+    const question = el('div', 'learn-q');
+    const mark = el('span', 'q-mark');
+    mark.textContent = '?';
+    mark.setAttribute('aria-hidden', 'true');
+    question.append(mark);
+    if (editing) {
+      const label = el('span', 'q-label');
+      label.textContent = 'Your question';
+      question.append(label);
+    } else {
+      const text = el('button', note ? 'q-text' : 'q-text blank');
+      text.type = 'button';
+      text.dataset.action = 'note';
+      text.title = note ? 'Edit question' : 'Add a question';
+      if (note) appendWithHits(text, note, terms);
+      else text.textContent = 'What do you want to find out? Add a question';
+      question.append(text);
+    }
+    card.append(question);
+    if (editing) card.append(noteEditor());
+
+    const passage = el('div', 'learn-passage');
+    passage.dataset.action = 'open';
+    passage.tabIndex = 0;
+    passage.setAttribute('role', 'button');
+    passage.title = isCurrent(page.key) ? 'Show on page' : 'Open the page and show';
+    passage.style.setProperty('--hl', h.bookmark ? 'var(--accent)' : HL.colorValue(h.color));
+    const text = el('p', 'text');
+    appendWithHits(text, String(h.text || ''), terms);
+    passage.append(text);
+    card.append(passage);
+
+    const foot = el('div', 'learn-foot');
+    const source = el('span', 'learn-src');
+    const where = el('span');
+    where.textContent = [page.title, ago(h.createdAt)].filter(Boolean).join(' · ');
+    where.title = page.url;
+    source.append(favicon(page), where);
+    const tools = el('div', 'learn-tools');
+    const got = pillButton('check', 'Got it', 'learn', 'Got it: clear Learn more');
+    got.classList.add('got');
+    const extra = el('div', 'item-actions');
+    extra.append(iconButton('copy', 'Copy text', 'copy'), iconButton('delete', 'Delete highlight', 'delete'));
+    tools.append(extra, got);
+    foot.append(source, tools);
+    card.append(foot);
+    return card;
   }
 
   function learnCount() {
@@ -481,13 +578,14 @@
     return b;
   }
 
-  function empty(message) {
+  function empty(message, icon = 'highlighter') {
     const box = el('div', 'empty');
-    const icon = el('span', 'empty-icon');
-    icon.innerHTML = `<svg viewBox="0 0 24 24" aria-hidden="true"><path d="${ICONS.highlighter}"/></svg>`;
+    box.classList.toggle('learn', icon === 'learn');
+    const tile = el('span', 'empty-icon');
+    tile.innerHTML = `<svg viewBox="0 0 24 24" aria-hidden="true"><path d="${ICONS[icon]}"/></svg>`;
     const p = el('p');
     p.textContent = message;
-    box.append(icon, p);
+    box.append(tile, p);
     return box;
   }
 
@@ -545,7 +643,8 @@
         if (state.editing) await saveNote(); // keep what was typed in another note
         const page = findPage(key);
         const h = page && page.highlights.find((x) => x.id === id);
-        state.editing = { key, id, draft: HL.noteOf(h) };
+        // On a passage to learn, the note is the question.
+        state.editing = { key, id, draft: HL.noteOf(h), placeholder: h && h.learn ? LEARN_PROMPT : undefined };
         render();
         break;
       }
