@@ -798,6 +798,75 @@ main {
   margin-top: 8px;
 }
 
+.editor-label {
+  display: block;
+  margin-bottom: 4px;
+  color: var(--muted);
+  font-size: 11px;
+  font-weight: 600;
+}
+
+.note-editor.question .editor-label {
+  color: var(--learn);
+}
+
+.note-editor.answer .editor-label {
+  color: var(--success, #188038);
+}
+
+.note-editor.question textarea:focus {
+  border-color: var(--learn);
+  box-shadow: 0 0 0 3px color-mix(in srgb, var(--learn) 22%, transparent);
+}
+
+.note-editor.answer textarea:focus {
+  border-color: var(--success, #188038);
+  box-shadow: 0 0 0 3px color-mix(in srgb, var(--success, #188038) 22%, transparent);
+}
+
+/* The Learn more question under a highlight: a purple "?" and the question. */
+.item-question {
+  display: flex;
+  align-items: flex-start;
+  gap: 8px;
+  width: 100%;
+  margin: 6px 0 0;
+  padding: 6px 10px;
+  border: 1px solid transparent;
+  border-radius: 10px;
+  background: color-mix(in srgb, var(--learn) 8%, transparent);
+  color: var(--fg);
+  font-size: 12.5px;
+  font-weight: 600;
+  text-align: left;
+  cursor: text;
+  transition: border-color 0.12s;
+}
+
+.item-question:hover {
+  border-color: color-mix(in srgb, var(--learn) 35%, var(--line));
+}
+
+.q-mark.small {
+  width: 18px;
+  height: 18px;
+  font-size: 11px;
+  line-height: 18px;
+}
+
+.learned-tag {
+  display: inline-block;
+  margin-right: 6px;
+  padding: 0 8px;
+  border-radius: 999px;
+  background: color-mix(in srgb, var(--success, #188038) 14%, transparent);
+  color: var(--success, #188038);
+  font-size: 11px;
+  font-weight: 600;
+  line-height: 17px;
+  vertical-align: 1px;
+}
+
 .note-editor textarea {
   display: block;
   width: 100%;
@@ -1075,13 +1144,84 @@ main {
 
 .learn-head {
   display: flex;
-  align-items: center;
+  flex-direction: column;
   gap: 12px;
   margin-bottom: 12px;
   padding: 14px 16px;
   border: 1px solid color-mix(in srgb, var(--learn) 22%, var(--line));
   border-radius: 16px;
   background: color-mix(in srgb, var(--learn) 8%, var(--bg));
+}
+
+.learn-head-top {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+/* How much has been learned. */
+.learn-progress {
+  height: 6px;
+  overflow: hidden;
+  border-radius: 999px;
+  background: color-mix(in srgb, var(--learn) 16%, var(--bg));
+}
+
+.learn-progress span {
+  display: block;
+  height: 100%;
+  border-radius: 999px;
+  background: var(--success, #188038);
+  transition: width 0.3s ease-out;
+}
+
+/* To learn / Learned. */
+.learn-switch {
+  display: flex;
+  gap: 2px;
+  padding: 3px;
+  border-radius: 12px;
+  background: color-mix(in srgb, var(--fg) 6%, transparent);
+}
+
+.learn-switch button {
+  flex: 1;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  padding: 6px 10px;
+  border: 0;
+  border-radius: 9px;
+  background: none;
+  color: var(--muted);
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.learn-switch button[aria-selected='true'] {
+  background: var(--bg);
+  color: var(--fg);
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.12);
+}
+
+.switch-count {
+  min-width: 18px;
+  padding: 0 5px;
+  border-radius: 999px;
+  background: color-mix(in srgb, var(--fg) 8%, transparent);
+  font-size: 11px;
+  line-height: 17px;
+}
+
+.learn-switch [data-view='open'][aria-selected='true'] .switch-count {
+  background: var(--learn);
+  color: var(--bg);
+}
+
+.learn-switch [data-view='done'][aria-selected='true'] .switch-count {
+  background: var(--success, #188038);
+  color: var(--bg);
 }
 
 .learn-head-icon {
@@ -1276,6 +1416,47 @@ main {
   border-color: var(--learn);
   background: color-mix(in srgb, var(--learn) 85%, var(--fg));
   color: var(--bg);
+}
+
+/* A learned passage: a green check instead of the "?", and what was learned. */
+.learn-card.learned .q-mark {
+  background: var(--success);
+}
+
+.learn-card.learned:hover,
+.learn-card.learned:focus-within {
+  border-color: color-mix(in srgb, var(--success) 35%, var(--line));
+}
+
+.learned-answer {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  width: 100%;
+  padding: 8px 12px;
+  border: 1px solid transparent;
+  border-radius: 10px;
+  background: color-mix(in srgb, var(--success) 9%, transparent);
+  color: var(--fg);
+  font-size: 13px;
+  text-align: left;
+  white-space: pre-wrap;
+  word-break: break-word;
+  cursor: text;
+}
+
+.learned-answer:hover {
+  border-color: color-mix(in srgb, var(--success) 35%, var(--line));
+}
+
+.answer-label {
+  color: var(--success);
+  font-size: 11px;
+  font-weight: 650;
+}
+
+.learn-card .user-note {
+  margin: 0;
 }
 
 .empty.learn .empty-icon {

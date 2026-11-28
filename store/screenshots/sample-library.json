@@ -12,18 +12,18 @@
     "url": "https://news.example.net/science/sleep-and-memory",
     "title": "What sleep does for memory",
     "highlights": [
-      { "id": "s-sleep-1", "color": "green", "text": "During deep sleep, the brain replays the day's experiences and decides what to keep.", "daysAgo": 1.2, "learn": true, "note": "Which stage of sleep does the replaying, and how was it measured?" },
+      { "id": "s-sleep-1", "color": "green", "text": "During deep sleep, the brain replays the day's experiences and decides what to keep.", "daysAgo": 1.2, "learn": true, "question": "Which stage of sleep does the replaying, and how was it measured?", "note": "Ties in with the chapter on spaced repetition." },
       { "id": "s-sleep-2", "color": "yellow", "text": "Memory is less a recording than a reconstruction, rebuilt a little differently each time we read it back.", "daysAgo": 1.1, "note": "Good quote for the talk on note-taking." },
-      { "id": "s-sleep-3", "color": "pink", "text": "Short naps help, but only when they stay under thirty minutes.", "daysAgo": 1.0 }
+      { "id": "s-sleep-3", "color": "pink", "text": "Short naps help, but only when they stay under thirty minutes.", "daysAgo": 1.0, "question": "Why does a longer nap stop helping?", "learnedDaysAgo": 0.5, "answer": "Past about 30 minutes you drop into deep sleep, and waking from it leaves you groggy (sleep inertia)." }
     ]
   },
   {
     "url": "https://learn.example.org/design/readable-interfaces",
     "title": "Designing readable interfaces",
     "highlights": [
-      { "id": "s-design-1", "color": "blue", "text": "Body text needs a contrast ratio of at least 4.5 to 1 to stay readable.", "daysAgo": 3, "learn": true, "note": "How is the contrast ratio calculated?" },
+      { "id": "s-design-1", "color": "blue", "text": "Body text needs a contrast ratio of at least 4.5 to 1 to stay readable.", "daysAgo": 3, "learn": true, "question": "How is the contrast ratio calculated?" },
       { "id": "s-design-2", "color": "orange", "text": "Never rely on color alone to carry meaning.", "daysAgo": 3.1, "note": "Check the status badges on our dashboard: red and green only." },
-      { "id": "s-design-3", "color": "green", "text": "Lines of 50 to 75 characters are the easiest to read.", "daysAgo": 3.2 }
+      { "id": "s-design-3", "color": "green", "text": "Lines of 50 to 75 characters are the easiest to read.", "daysAgo": 3.2, "question": "Where does the 50 to 75 range come from?", "learnedDaysAgo": 2, "answer": "Typography research on reading speed: long lines make the eye lose its place, short ones break the rhythm." }
     ]
   },
   {
@@ -38,7 +38,7 @@
     "url": "https://www.example.com/recipes/weeknight-lentil-soup",
     "title": "A weeknight lentil soup",
     "highlights": [
-      { "id": "s-soup-1", "color": "orange", "text": "Toast the spices in oil before the lentils go in.", "daysAgo": 12 },
+      { "id": "s-soup-1", "color": "orange", "text": "Toast the spices in oil before the lentils go in.", "daysAgo": 12, "question": "Why toast spices in oil first?", "learnedDaysAgo": 9, "answer": "Many flavor compounds dissolve in fat, not water, so blooming them in oil spreads their taste through the dish." },
       { "id": "s-soup-2", "color": "green", "text": "A squeeze of lemon at the end brightens everything.", "daysAgo": 12.1 }
     ]
   },

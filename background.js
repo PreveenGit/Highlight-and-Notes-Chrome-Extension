@@ -3,6 +3,11 @@ importScripts('shared/common.js');
 
 const OPEN_SIDE_PANEL = 'open-side-panel'; // command name in manifest.json
 
+// 1.8 gave Learn more its own question; earlier versions saved it as the note.
+chrome.runtime.onInstalled.addListener(() => {
+  HL.migrateLearnQuestions().catch((err) => console.warn('[Highlight] migration failed:', err));
+});
+
 chrome.commands.onCommand.addListener((command, tab) => {
   if (command === OPEN_SIDE_PANEL) {
     // Must be called right away: opening the panel needs the command's user gesture.

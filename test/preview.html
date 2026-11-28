@@ -17,7 +17,9 @@
            side=right           put the UI on the right, where Chrome's side panel is
            float                (popup) float over the page at the top right
            seed[=<json>]        first add sample pages: the built-in set, or a JSON file of
-                                [{ url, title, highlights: [{ id, color, text, daysAgo, note?, bookmark?, learn? }] }]
+                                [{ url, title, highlights: [{ id, color, text, daysAgo, note?, bookmark?, learn?,
+                                                              question?, learnedDaysAgo?, answer? }] }]
+           settings             (popup) open the Settings screen
            view=page|pages|timeline|learn, search=<text>   (library) starting view and search
            menu                 (library) open the export/import menu
            colors=<hex,hex>     custom colors to add to the palette (codes without #)
@@ -137,9 +139,10 @@
           });
         }
 
-        if (ui === 'popup' && params.has('addcolor')) {
+        if (ui === 'popup' && (params.has('settings') || params.has('addcolor'))) {
           await new Promise((resolve) => setTimeout(resolve, 300));
-          document.getElementById('addButton').click();
+          document.getElementById('openSettings').click();
+          if (params.has('addcolor')) document.getElementById('addButton').click();
         }
 
         // Library starting state.
@@ -177,7 +180,10 @@
               createdAt: now - h.daysAgo * 86400000,
               ...(h.note ? { note: h.note } : {}),
               ...(h.bookmark ? { bookmark: true } : {}),
-              ...(h.learn ? { learn: true } : {})
+              ...(h.learn ? { learn: true } : {}),
+              ...(h.question ? { question: h.question } : {}),
+              ...(h.answer ? { answer: h.answer } : {}),
+              ...(h.learnedDaysAgo !== undefined ? { learnedAt: now - h.learnedDaysAgo * 86400000 } : {})
             }))
           };
         }

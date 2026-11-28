@@ -85,7 +85,8 @@
     LIST: 'list',
     SCROLL_TO: 'scroll-to',
     DELETE: 'delete',
-    CLEAR: 'clear'
+    CLEAR: 'clear',
+    SET_LEARN: 'set-learn' // { id, state: 'learn' | 'learned' | 'none' }
   };
 
   // Same page => same key: drop the #hash and utm_* tracking parameters, and
@@ -121,27 +122,91 @@
       added: newList.filter((h) => !before.has(h.id)),
       removed: oldList.filter((h) => !after.has(h.id)),
       recolored: kept.filter((h) => before.get(h.id).color !== h.color),
-      noted: kept.filter((h) => HL.noteOf(before.get(h.id)) !== HL.noteOf(h)),
-      flagged: kept.filter((h) => !!before.get(h.id).learn !== !!h.learn)
+      // The hover text covers the note, the question and what was learned.
+      noted: kept.filter((h) => HL.tooltipOf(before.get(h.id)) !== HL.tooltipOf(h)),
+      flagged: kept.filter((h) => HL.learnStateOf(before.get(h.id)) !== HL.learnStateOf(h))
     };
   };
 
-  // Copy of `h` marked (or no longer marked) "learn more"; unmarked removes the field.
-  HL.withLearn = function withLearn(h, on) {
-    const { learn: _old, ...rest } = h;
-    return on ? { ...rest, learn: true } : rest;
-  };
+  // ---- Notes and Learn more ---------------------------------------------------
+  // A highlight can have a note, and a separate Learn more track:
+  //   learn: true         on the To learn list
+  //   question: string    what the user wants to find out
+  //   learnedAt: number   when they clicked Got it (then learn is removed): "Learned"
+  //   answer: string      what they learned
+
+  function textOf(h, field) {
+    return h && typeof h[field] === 'string' ? h[field].trim() : '';
+  }
+
+  function withText(h, field, value) {
+    const { [field]: _old, ...rest } = h;
+    const text = typeof value === 'string' ? value.trim() : '';
+    return text ? { ...rest, [field]: text } : rest;
+  }
 
   // A highlight's note, or '' when it has none. Notes are optional plain text.
-  HL.noteOf = function noteOf(h) {
-    return h && typeof h.note === 'string' ? h.note.trim() : '';
+  HL.noteOf = (h) => textOf(h, 'note');
+  // Copy of `h` with its note set to `note`; an empty note removes the field.
+  HL.withNote = (h, note) => withText(h, 'note', note);
+  HL.questionOf = (h) => textOf(h, 'question');
+  HL.withQuestion = (h, question) => withText(h, 'question', question);
+  HL.answerOf = (h) => textOf(h, 'answer');
+  HL.withAnswer = (h, answer) => withText(h, 'answer', answer);
+
+  // 'learn' (to learn), 'learned' or 'none'.
+  HL.learnStateOf = function learnStateOf(h) {
+    if (h && h.learn) return 'learn';
+    if (h && Number.isFinite(h.learnedAt)) return 'learned';
+    return 'none';
   };
 
-  // Copy of `h` with its note set to `note`; an empty note removes the field.
-  HL.withNote = function withNote(h, note) {
-    const { note: _old, ...rest } = h;
-    const text = typeof note === 'string' ? note.trim() : '';
-    return text ? { ...rest, note: text } : rest;
+  // Copy of `h` moved to a Learn more state. "learned" keeps the question and
+  // answer and records when; "none" drops the whole track.
+  HL.withLearnState = function withLearnState(h, state, now = Date.now()) {
+    const { learn: _l, learnedAt: _t, question: _q, answer: _a, ...rest } = h;
+    const kept = { ...(h.question ? { question: h.question } : {}), ...(h.answer ? { answer: h.answer } : {}) };
+    if (state === 'learn') return { ...rest, ...kept, learn: true };
+    if (state === 'learned') return { ...rest, ...kept, learnedAt: Number.isFinite(h.learnedAt) ? h.learnedAt : now };
+    return rest;
+  };
+
+  // Hover text on the page: the note, then the question and what was learned.
+  HL.tooltipOf = function tooltipOf(h) {
+    const state = HL.learnStateOf(h);
+    const parts = [HL.noteOf(h)];
+    if (state !== 'none' && HL.questionOf(h)) parts.push(`Question: ${HL.questionOf(h)}`);
+    if (state === 'learned' && HL.answerOf(h)) parts.push(`Learned: ${HL.answerOf(h)}`);
+    return parts.filter(Boolean).join('\n\n');
+  };
+
+  // Before 1.8 the Learn more question was saved as the note. Moves it to
+  // `question` on highlights marked to learn more that have no question yet.
+  // Returns the list unchanged (same object) when nothing needs to move.
+  HL.moveLearnNotes = function moveLearnNotes(list) {
+    let moved = false;
+    const next = list.map((h) => {
+      if (!h.learn || HL.questionOf(h) || !HL.noteOf(h)) return h;
+      moved = true;
+      return HL.withNote(HL.withQuestion(h, HL.noteOf(h)), '');
+    });
+    return moved ? next : list;
+  };
+
+  // Runs moveLearnNotes over every stored page, once (remembered in settings).
+  HL.migrateLearnQuestions = async function migrateLearnQuestions() {
+    const all = await chrome.storage.local.get(null);
+    const settings = all[HL.SETTINGS_KEY] || {};
+    if (settings.migrations && settings.migrations.learnQuestions) return 0;
+    const updates = {};
+    for (const [key, page] of Object.entries(all)) {
+      if (!key.startsWith(HL.PAGE_KEY_PREFIX) || !page || !Array.isArray(page.highlights)) continue;
+      const next = HL.moveLearnNotes(page.highlights);
+      if (next !== page.highlights) updates[key] = { ...page, highlights: next };
+    }
+    updates[HL.SETTINGS_KEY] = { ...settings, migrations: { ...settings.migrations, learnQuestions: true } };
+    await chrome.storage.local.set(updates);
+    return Object.keys(updates).length - 1;
   };
 
   // How long ago `time` (ms since epoch) was, like "2 days ago" or "yesterday";

@@ -9,6 +9,8 @@
     bookmark: 'M17 3H7c-1.1 0-1.99.9-1.99 2L5 21l7-3 7 3V5c0-1.1-.9-2-2-2z',
     learn: 'M5 13.18v4L12 21l7-3.82v-4L12 17l-7-3.82zM12 3 1 9l11 6 9-4.91V17h2V9L12 3z',
     check: 'M9 16.17 4.83 12l-1.42 1.41L9 19 21 7l-1.41-1.41z',
+    question:
+      'M11 18h2v-2h-2v2zm1-16C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm0 18c-4.41 0-8-3.59-8-8s3.59-8 8-8 8 3.59 8 8-3.59 8-8 8zm0-14c-2.21 0-4 1.79-4 4h2c0-1.1.9-2 2-2s2 .9 2 2c0 2-3 1.75-3 5h2c0-2.25 3-2.5 3-5 0-2.21-1.79-4-4-4z',
     note: 'M21.99 4c0-1.1-.89-2-1.99-2H4c-1.1 0-2 .9-2 2v12c0 1.1.9 2 2 2h14l4 4-.01-18zM18 14H6v-2h12v2zm0-3H6V9h12v2zm0-3H6V6h12v2z',
     copy: 'M16 1H4c-1.1 0-2 .9-2 2v14h2V3h12V1zm3 4H8c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h11c1.1 0 2-.9 2-2V7c0-1.1-.9-2-2-2zm0 16H8V7h11v14z',
     delete: 'M6 19c0 1.1.9 2 2 2h8c1.1 0 2-.9 2-2V7H6v12zM19 4h-3.5l-1-1h-5l-1 1H5v2h14V4z'
@@ -77,7 +79,22 @@
     .icon:active { transform: scale(0.9); }
     .icon.on { color: #fdd663; }
     .icon[data-action='bookmark'] { color: #8ab4f8; }
-    .icon[data-action='learn'] { color: #d7aefb; }
+    .icon[data-action='learn'],
+    .icon[data-action='question'] { color: #d7aefb; }
+    .note-title {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      padding: 0 2px;
+      color: #bdc1c6;
+      font: 600 11px/1.2 system-ui, -apple-system, 'Segoe UI', sans-serif;
+      letter-spacing: 0.02em;
+    }
+    .note-title svg { width: 14px; height: 14px; fill: currentColor; }
+    .bar.question .note-title { color: #d7aefb; }
+    .bar.question textarea:focus { border-color: #d7aefb; box-shadow: 0 0 0 3px rgba(215, 174, 251, 0.25); }
+    .bar.question .text-btn.primary { background: #d7aefb; }
+    .bar.question .text-btn.primary:hover { background: #e7cdfd; }
     .icon[data-action='delete']:hover { color: #f28b82; background: rgba(242, 139, 130, 0.14); }
     .icon svg { width: 18px; height: 18px; fill: currentColor; }
     .icon::after {
@@ -193,7 +210,7 @@
   // mode "edit": swatches to recolor plus note, learn more / got it, copy and delete
   //   for a clicked highlight. A clicked bookmark has no color, so no swatches.
   // `colors` is the palette to offer: built-in names and the user's custom "#rrggbb".
-  function show(rect, { mode, color, colors = HL.COLOR_NAMES, hasNote = false, bookmark = false, learn = false }) {
+  function show(rect, { mode, color, colors = HL.COLOR_NAMES, hasNote = false, bookmark = false, learn = false, hasQuestion = false }) {
     ensure();
     noteArea = null;
     bar.className = 'bar';
@@ -215,9 +232,12 @@
       note.classList.toggle('on', hasNote);
       bar.append(
         note,
-        learn
-          ? iconButton('learn', 'Got it: clear Learn more', 'check')
-          : iconButton('learn', 'Mark to learn more'),
+        ...(learn
+          ? [
+              iconButton('question', hasQuestion ? 'Edit your question' : 'Add your question'),
+              iconButton('learn', 'Got it: move to Learned', 'check')
+            ]
+          : [iconButton('learn', 'Mark to learn more')]),
         iconButton('copy', 'Copy text'),
         iconButton('delete', bookmark ? 'Remove bookmark' : 'Remove highlight')
       );
@@ -232,17 +252,28 @@
     place(rect);
   }
 
-  // The note editor: a text box with Save and Cancel. Ctrl/Cmd+Enter saves and
-  // Escape cancels.
-  function showNote(rect, { text = '', placeholder = 'Add a note…' } = {}) {
+  // The text box for a note or a Learn more question (kind 'question' is purple),
+  // with a title line, Save and Cancel. Ctrl/Cmd+Enter saves and Escape cancels.
+  function showNote(rect, { text = '', placeholder = 'Add a note…', title = 'Note', kind = 'note' } = {}) {
     ensure();
-    bar.className = 'bar note-mode';
+    bar.className = `bar note-mode ${kind === 'question' ? 'question' : ''}`.trim();
     bar.replaceChildren();
+
+    const heading = document.createElement('div');
+    heading.className = 'note-title';
+    const headingIcon = document.createElementNS('http://www.w3.org/2000/svg', 'svg');
+    headingIcon.setAttribute('viewBox', '0 0 24 24');
+    const headingPath = document.createElementNS('http://www.w3.org/2000/svg', 'path');
+    headingPath.setAttribute('d', ICONS[kind === 'question' ? 'learn' : 'note']);
+    headingIcon.append(headingPath);
+    const headingText = document.createElement('span');
+    headingText.textContent = title;
+    heading.append(headingIcon, headingText);
 
     noteArea = document.createElement('textarea');
     noteArea.value = text;
     noteArea.placeholder = placeholder;
-    noteArea.setAttribute('aria-label', 'Note');
+    noteArea.setAttribute('aria-label', title);
     // content/guard.js normally stops these keys at the window, before the page sees
     // them, and calls handleKey itself. These listeners are the fallback for when it
     // isn't loaded.
@@ -262,7 +293,7 @@
     row.className = 'row';
     row.append(hint, cancel, save);
 
-    bar.append(noteArea, row);
+    bar.append(heading, noteArea, row);
     bar.hidden = false;
     place(rect);
     noteArea.focus({ preventScroll: true });

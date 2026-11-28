@@ -3,7 +3,7 @@
 (() => {
   const HL = globalThis.HL;
   const BACKUP_FORMAT = 'highlight-backup';
-  const BACKUP_VERSION = 1;
+  const BACKUP_VERSION = 2; // 2: Learn more has its own question (1 kept it in the note)
 
   // chrome.storage.local.get(null) output -> list of pages:
   // { key, url, title, site, highlights, firstAt, lastAt }
@@ -44,35 +44,37 @@
   };
 
   // Applies search and color filters, then sorts.
-  //   query:  every word must appear in the highlight text, its note, page title or URL
+  //   query:  every word must appear in the highlight text, its note, question or
+  //           what was learned, or the page title or URL
   //   colors: color names to keep (empty = all)
   //   sort:   newest | oldest | site | most
-  //   learn:  true to keep only highlights marked "learn more"
+  //   learn:  'open' to keep only highlights to learn, 'done' only learned ones
+  //           (true means 'open')
   // Returns { pages, timeline, count }. Pages keep only their matching highlights,
   // in page order; the timeline is every match, newest first (or oldest first).
+  // For 'done' the timeline is ordered by when each was learned.
   function filterAndSort(pages, { query = '', colors = [], sort = 'newest', learn = false } = {}) {
     const terms = searchTerms(query);
     const colorSet = new Set(colors);
+    const want = learn === true ? 'open' : learn;
     const out = [];
     for (const page of pages) {
       const pageText = `${page.title}\n${page.url}`.toLowerCase();
       const highlights = page.highlights.filter((h) => {
-        if (learn && !h.learn) return false;
+        if (want === 'open' && HL.learnStateOf(h) !== 'learn') return false;
+        if (want === 'done' && HL.learnStateOf(h) !== 'learned') return false;
         // A bookmark has no highlight color, so color filters leave it out.
         if (colorSet.size && (h.bookmark || !colorSet.has(h.color))) return false;
-        const own = `${h.text || ''}\n${HL.noteOf(h)}`.toLowerCase();
+        const own = `${h.text || ''}\n${HL.noteOf(h)}\n${HL.questionOf(h)}\n${HL.answerOf(h)}`.toLowerCase();
         return terms.every((t) => pageText.includes(t) || own.includes(t));
       });
       if (highlights.length) out.push({ ...page, highlights: inPageOrder(highlights) });
     }
     out.sort(PAGE_SORTS[sort] || PAGE_SORTS.newest);
+    const when = (h) => (want === 'done' ? h.learnedAt : h.createdAt);
     const timeline = out
       .flatMap((page) => page.highlights.map((highlight) => ({ highlight, page })))
-      .sort((a, b) =>
-        sort === 'oldest'
-          ? a.highlight.createdAt - b.highlight.createdAt
-          : b.highlight.createdAt - a.highlight.createdAt
-      );
+      .sort((a, b) => (sort === 'oldest' ? when(a.highlight) - when(b.highlight) : when(b.highlight) - when(a.highlight)));
     return { pages: out, timeline, count: timeline.length };
   }
 
@@ -85,18 +87,23 @@
     return [...highlights].sort((a, b) => start(a) - start(b));
   }
 
-  // Pages -> Markdown, one section per page with each highlight as a quote and
-  // its note, if any, as a paragraph after it.
+  // Pages -> Markdown, one section per page with each highlight as a quote, then
+  // its note, its Learn more question and what was learned, each as a paragraph.
   function toMarkdown(pages) {
     const lines = [];
+    // Two trailing spaces keep the text's own line breaks in rendered Markdown.
+    const block = (label, text) => {
+      if (text) lines.push(`**${label}:** ${text.split(/\r?\n/).map((l) => l.trimEnd()).join('  \n')}`, '');
+    };
     for (const page of pages) {
       lines.push(`## [${page.title.replace(/[[\]]/g, '\\$&')}](${page.url.replace(/[ ()]/g, encodeURIComponent)})`, '');
       for (const h of page.highlights) {
-        const marks = (h.bookmark ? '🔖 ' : '') + (h.learn ? '❓ ' : '');
+        const state = HL.learnStateOf(h);
+        const marks = (h.bookmark ? '🔖 ' : '') + (state === 'learn' ? '❓ ' : state === 'learned' ? '✅ ' : '');
         lines.push(`> ${marks}${String(h.text).replace(/\s+/g, ' ').trim()}`, '');
-        const note = HL.noteOf(h);
-        // Two trailing spaces keep the note's own line breaks in rendered Markdown.
-        if (note) lines.push(`**Note:** ${note.split(/\r?\n/).map((l) => l.trimEnd()).join('  \n')}`, '');
+        block('Note', HL.noteOf(h));
+        if (state !== 'none') block('Question', HL.questionOf(h));
+        if (state === 'learned') block('Learned', HL.answerOf(h));
       }
     }
     return lines.join('\n').trim() + '\n';
@@ -135,8 +142,10 @@
       } catch {
         continue; // not a URL
       }
-      const highlights = page.highlights.filter(isValidHighlight).map(cleanHighlight);
+      let highlights = page.highlights.filter(isValidHighlight).map(cleanHighlight);
       if (!highlights.length) continue;
+      // Version 1 kept the Learn more question in the note.
+      if (!(data.version >= 2)) highlights = HL.moveLearnNotes(highlights);
       pages.push({ key, url: page.url, title: typeof page.title === 'string' ? page.title : page.url, highlights });
     }
     return pages;
@@ -152,19 +161,23 @@
       h.position && Number.isFinite(h.position.start) && Number.isFinite(h.position.end)
         ? { start: h.position.start, end: h.position.end }
         : undefined;
-    return HL.withNote(
-      {
-        id: h.id,
-        color: HL.isColor(h.color) ? h.color : HL.parseHex(h.color) || 'yellow', // built-in name or custom "#rrggbb"
-        text: str(h.text) || h.quote.exact,
-        quote: { exact: h.quote.exact, prefix: str(h.quote.prefix), suffix: str(h.quote.suffix) },
-        position,
-        createdAt: Number.isFinite(h.createdAt) ? h.createdAt : Date.now(),
-        ...(h.bookmark === true ? { bookmark: true } : {}),
-        ...(h.learn === true ? { learn: true } : {})
-      },
-      h.note
-    );
+    const learn = h.learn === true;
+    let clean = {
+      id: h.id,
+      color: HL.isColor(h.color) ? h.color : HL.parseHex(h.color) || 'yellow', // built-in name or custom "#rrggbb"
+      text: str(h.text) || h.quote.exact,
+      quote: { exact: h.quote.exact, prefix: str(h.quote.prefix), suffix: str(h.quote.suffix) },
+      position,
+      createdAt: Number.isFinite(h.createdAt) ? h.createdAt : Date.now(),
+      ...(h.bookmark === true ? { bookmark: true } : {}),
+      ...(learn ? { learn: true } : {}),
+      // Learned (not also to learn): when it was learned.
+      ...(!learn && Number.isFinite(h.learnedAt) ? { learnedAt: h.learnedAt } : {})
+    };
+    clean = HL.withNote(clean, h.note);
+    clean = HL.withQuestion(clean, h.question);
+    clean = HL.withAnswer(clean, h.answer);
+    return clean;
   }
 
   // Adds `incoming` highlights to `list`, skipping ids already there (existing ones win).

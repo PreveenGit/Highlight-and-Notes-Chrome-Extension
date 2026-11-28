@@ -44,10 +44,11 @@ Stop hunting for where you left off in long articles, docs and tutorials.
 • When you come back, click the toolbar icon, then Continue reading: the page scrolls straight to that line and greets you with "You left off here".
 
 LEARN MORE LATER
-Turn the parts you don't understand yet into a study list, instead of forgetting them.
-• Click the Learn more button (graduation cap) on a passage, on the page or in the library, and write down your question.
-• A "?" badge marks the passage on the page, and the To learn tab in the library collects these passages from every page.
-• Click Got it once you understand. The highlight and your question stay.
+Turn the parts you don't understand yet into a study list, and watch it shrink as you learn.
+• Click the Learn more button (graduation cap) on a passage, on the page or in the library, and write down your question. Questions are kept apart from your notes.
+• A "?" badge marks the passage on the page, and the To learn tab in the library collects these passages from every page, question first.
+• Click Got it once you understand: the passage moves to your Learned list with the date, and you can write down what you learned.
+• A progress bar shows how much you've learned. Change your mind? Learn again puts it back on the list.
 
 ONE LIBRARY FOR EVERYTHING
 All your reading in one place, not scattered across tabs and bookmarks.
@@ -83,7 +84,7 @@ Works on most web pages. Chrome doesn't allow extensions on chrome:// pages, the
 | `store/screenshots/1-highlight.png` | An article with highlights, note badges, a "?" (learn more) and a bookmarked line with its "Resume" tag; the toolbar over a selection shows the note, bookmark and learn-more buttons |
 | `store/screenshots/2-side-panel.png` | The side panel listing the page's highlights with notes, a Learn more item and the bookmark |
 | `store/screenshots/3-bookmark.png` | The toolbar popup with the Continue reading card and the color palette with custom colors, next to the bookmarked line and its "Resume" tag |
-| `store/screenshots/4-to-learn.png` | The library's To learn tab: passages marked to learn more, with questions, from several sites |
+| `store/screenshots/4-to-learn.png` | The library's To learn tab: progress, the To learn / Learned switch, and passages to learn with their questions, from several sites |
 | `store/screenshots/5-backup.png` | The full-tab library with the Export Markdown / Export backup / Import backup menu open |
 
 Small promo tile (440×280) and marquee (1400×560) are optional and not included.
@@ -108,7 +109,7 @@ Small promo tile (440×280) and marquee (1400×560) are optional and not include
 
 **Data usage — what user data do you collect?** The store counts data the extension stores locally as "handling" user data, even when it never leaves the device. Tick:
 
-- [x] **Website content** — the highlighted text and a few characters around it, plus any note the user writes on a highlight.
+- [x] **Website content** — the highlighted text and a few characters around it, plus any note, Learn more question or "what I learned" text the user writes on a highlight.
 - [x] **Web history** — the URL and title of pages where the user made a highlight, and when.
 
 Leave everything else unticked (no personally identifiable, health, financial, authentication, communications, location or user activity data). Notes are text the user chooses to save next to a highlight, not keystroke logging, so they don't make it "user activity"; they're disclosed under website content and in the privacy policy.
@@ -131,4 +132,4 @@ GitHub Pages publishes `docs/` from the `main` branch of `PreveenGit/Highlight-a
 
 ## Test instructions tab (optional)
 
-> No account or setup is needed. Open any article, select a sentence, and click a color in the toolbar that appears (or press Alt+Shift+H). Click the highlight to recolor or delete it. Reload the page: the highlight is restored. In the toolbar, the speech-bubble button adds a note, the bookmark button bookmarks the line (the toolbar icon's popup then shows Continue reading), and the graduation-cap button marks a passage to learn more and asks for a question. In the popup, the "+" after the colors adds a custom color by code or picker. Press Alt+Shift+L (or the side-panel button in the popup) to open the library; the To learn tab lists passages marked to learn more.
+> No account or setup is needed. Open any article, select a sentence, and click a color in the toolbar that appears (or press Alt+Shift+H). Click the highlight to recolor or delete it. Reload the page: the highlight is restored. In the toolbar, the speech-bubble button adds a note, the bookmark button bookmarks the line (the toolbar icon's popup then shows Continue reading), and the graduation-cap button marks a passage to learn more and asks for a question. In the popup, the "+" after the colors adds a custom color by code or picker. Press Alt+Shift+L (or the side-panel button in the popup) to open the library; the To learn tab lists passages marked to learn more with their questions; Got it moves one to the Learned list, where you can add what you learned.

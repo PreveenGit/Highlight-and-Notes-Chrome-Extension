@@ -11,6 +11,7 @@
   --danger: #d93025;
   --hit: #fde293;
   --learn: #8430ce;
+  --success: #188038;
 }
 
 @media (prefers-color-scheme: dark) {
@@ -25,5 +26,6 @@
     --danger: #f28b82;
     --hit: #5c4d0f;
     --learn: #d7aefb;
+    --success: #81c995;
   }
 }

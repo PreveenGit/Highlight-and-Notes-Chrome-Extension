@@ -1,7 +1,10 @@
 // Highlights for the current page, kept in chrome.storage.local under one key per page:
-//   "hl:<url>" -> { url, title, highlights: [{ id, color, text, quote, position, createdAt, note?, bookmark?, learn? }] }
+//   "hl:<url>" -> { url, title, highlights: [{ id, color, text, quote, position, createdAt,
+//                                               note?, bookmark?, learn?, question?, learnedAt?, answer? }] }
 // A bookmark is a highlight with bookmark: true, at most one per page. learn: true
-// marks a highlight the user wants to come back to and learn more about.
+// marks a highlight the user wants to come back to and learn more about, with an
+// optional question; Got it replaces learn with learnedAt and keeps the question,
+// plus an optional answer (see HL.withLearnState).
 //
 // The in-memory list changes immediately so the page and the store never disagree.
 // Writes re-read storage first (HL.mutatePage), so another tab on the same URL is
@@ -66,7 +69,8 @@
     add: (highlight) => mutate((list) => [...list.filter((h) => h.id !== highlight.id), highlight]),
     update: (id, patch) => mutate((list) => list.map((h) => (h.id === id ? { ...h, ...patch } : h))),
     setNote: (id, note) => mutate((list) => list.map((h) => (h.id === id ? HL.withNote(h, note) : h))),
-    setLearn: (id, on) => mutate((list) => list.map((h) => (h.id === id ? HL.withLearn(h, on) : h))),
+    setQuestion: (id, question) => mutate((list) => list.map((h) => (h.id === id ? HL.withQuestion(h, question) : h))),
+    setLearnState: (id, state) => mutate((list) => list.map((h) => (h.id === id ? HL.withLearnState(h, state) : h))),
     remove: (id) => mutate((list) => list.filter((h) => h.id !== id)),
     clear: () => mutate(() => []),
     onExternalChange: (fn) => {

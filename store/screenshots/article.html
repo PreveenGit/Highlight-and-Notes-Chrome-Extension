@@ -56,7 +56,7 @@
       const LEARN_QUESTION = 'Why does marking a sentence help me remember it?';
       const MARKS = [
         ['Reading is not a race; it is a conversation with someone who is not in the room.', 'yellow', { note: 'Opening line for my talk on attention?' }],
-        ['mark the sentence that changed your mind', 'green', { learn: true, note: LEARN_QUESTION }],
+        ['mark the sentence that changed your mind', 'green', { learn: true, question: LEARN_QUESTION }],
         ['the margins of a page were where thinking happened', 'blue', { note: 'Compare with the essay on marginalia in old books.' }],
         ['Return to your highlights a week later.', 'pink'],
         // Phrases must sit on one source line: the page text keeps the HTML's line breaks.
@@ -64,7 +64,7 @@
       ];
       // Typed into the note editor in the "note" scene.
       const NOTE_DRAFT = 'Set a weekly reminder: review highlights every Sunday morning.';
-      const LEARN_PROMPT = 'What do you want to learn about this?';
+      const LEARN_PROMPT = 'What do you want to find out?';
       const scene = new URLSearchParams(location.search).get('scene');
       window.__sceneReady = !scene; // test/preview.html waits for this before opening its UI
 
@@ -89,19 +89,19 @@
         };
 
         await __hlSend({ type: 'clear' });
-        for (const [phrase, color, { note, learn, bookmark } = {}] of MARKS) {
+        for (const [phrase, color, { note, learn, question, bookmark } = {}] of MARKS) {
           await useColor(color);
           select(phrase);
           await __hlSend({ type: 'highlight-selection' });
           const { id } = HL.store.all().at(-1);
-          if (note) {
-            HL.marker.setNote(id, note);
-            await HL.store.setNote(id, note);
-          }
+          if (note) await HL.store.setNote(id, note);
           if (learn) {
             HL.marker.setLearn(id, true);
-            await HL.store.setLearn(id, true);
+            await HL.store.setLearnState(id, 'learn');
           }
+          if (question) await HL.store.setQuestion(id, question);
+          const saved = HL.store.get(id);
+          HL.marker.setNote(id, HL.noteOf(saved), HL.tooltipOf(saved));
           if (bookmark) {
             HL.marker.setBookmark(id);
             await HL.store.update(id, { bookmark: true });
@@ -113,7 +113,12 @@
         const greenMark = () => document.querySelector('mark.hl-mark[data-hl-color="green"]');
         const showNoteEditor = () => HL.toolbar.showNote(pinkMark().getBoundingClientRect(), { text: NOTE_DRAFT });
         const showLearnEditor = () =>
-          HL.toolbar.showNote(greenMark().getBoundingClientRect(), { text: LEARN_QUESTION, placeholder: LEARN_PROMPT });
+          HL.toolbar.showNote(greenMark().getBoundingClientRect(), {
+            text: LEARN_QUESTION,
+            placeholder: LEARN_PROMPT,
+            title: 'Learn more · your question',
+            kind: 'question'
+          });
 
         // Show the toolbars through the same mouseup handling a real click uses.
         const showToolbar = () => {

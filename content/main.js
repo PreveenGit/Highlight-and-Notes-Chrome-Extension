@@ -7,7 +7,7 @@
 
   const FAST_RETRY_MS = 10000; // retry restoring aggressively for this long after load
   const SLOW_RETRY_MS = 3000; // after that, at most this often
-  const LEARN_PROMPT = 'What do you want to learn about this?'; // note box placeholder
+  const QUESTION_PROMPT = 'What do you want to find out?'; // question box placeholder
 
   let settings = { ...HL.DEFAULT_SETTINGS };
   let currentHref = location.href;
@@ -17,6 +17,7 @@
   let checkTimer = null;
   let pendingRange = null; // selection the "create" toolbar acts on
   let activeId = null; // highlight the "edit" toolbar acts on
+  let editingField = 'note'; // what the toolbar's text box saves to: 'note' or 'question'
 
   init();
 
@@ -56,7 +57,7 @@
         unresolved.delete(h.id);
         if (h.bookmark) HL.marker.setBookmark(h.id);
         if (h.learn) HL.marker.setLearn(h.id, true);
-        HL.marker.setNote(h.id, h.note);
+        showNote(h);
       }
     }
   }
@@ -157,45 +158,57 @@
     HL.marker.recolor(id, color);
   }
 
-  function saveNote(id, note) {
+  // The note badge (a real note only) and the hover text (note, question, learned).
+  function showNote(h) {
+    HL.marker.setNote(h.id, HL.noteOf(h), HL.tooltipOf(h));
+  }
+
+  // Saves the toolbar text box to the highlight's note or Learn more question.
+  function saveField(id, field, text) {
     const saved = HL.store.get(id);
-    if (!saved || HL.noteOf(saved) === String(note || '').trim()) return;
-    HL.store.setNote(id, note);
-    HL.marker.setNote(id, note);
+    if (!saved) return;
+    const read = field === 'question' ? HL.questionOf : HL.noteOf;
+    if (read(saved) === String(text || '').trim()) return;
+    if (field === 'question') HL.store.setQuestion(id, text);
+    else HL.store.setNote(id, text);
+    showNote(HL.store.get(id));
   }
 
-  function setLearn(id, on) {
-    HL.store.setLearn(id, on);
-    HL.marker.setLearn(id, on);
+  // Moves a highlight on the Learn more track: 'learn', 'learned' (Got it) or 'none'.
+  function setLearnState(id, state) {
+    HL.store.setLearnState(id, state);
+    HL.marker.setLearn(id, state === 'learn');
+    const saved = HL.store.get(id);
+    if (saved) showNote(saved);
   }
 
-  // "Learn more" from the toolbar. On a selection: highlight it (default color) marked
-  // to learn more and ask what to learn. On a clicked highlight: mark it, and ask if
-  // it has no note yet; if it is already marked, "Got it" clears the mark.
-  // Returns true when the note editor is now open (so activeId must be kept).
+  // "Learn more" from the toolbar. On a selection: highlight it (default color) to
+  // learn and ask the question. On a clicked highlight: mark it and ask (or edit) the
+  // question; if it is already marked, "Got it" moves it to Learned.
+  // Returns true when the question box is now open (so activeId must be kept).
   function toggleLearn() {
     if (!activeId) {
       activeId = highlightRange(pendingRange, settings.defaultColor, { learn: true });
       pendingRange = null;
       if (!activeId) return false;
-      openNoteEditor(LEARN_PROMPT);
+      openEditor('question');
       return true;
     }
     const saved = HL.store.get(activeId);
     if (!saved) return false;
     if (saved.learn) {
-      setLearn(activeId, false);
+      setLearnState(activeId, 'learned');
       return false;
     }
-    setLearn(activeId, true);
-    if (HL.noteOf(saved)) return false;
-    openNoteEditor(LEARN_PROMPT);
+    setLearnState(activeId, 'learn');
+    openEditor('question');
     return true;
   }
 
-  // Opens the note editor on the clicked highlight, or first highlights the
-  // selection (in the default color) when the toolbar was shown for one.
-  function openNoteEditor(placeholder) {
+  // Opens the toolbar's text box for the note or the Learn more question of the
+  // clicked highlight, or first highlights the selection (in the default color)
+  // when the toolbar was shown for one.
+  function openEditor(field = 'note') {
     if (!activeId) {
       activeId = highlightRange(pendingRange, settings.defaultColor);
       pendingRange = null;
@@ -206,8 +219,15 @@
       HL.toolbar.hide();
       return;
     }
+    editingField = field;
+    const saved = HL.store.get(activeId);
     const rect = Array.from(marks[0].getClientRects()).find((r) => r.width && r.height) || marks[0].getBoundingClientRect();
-    HL.toolbar.showNote(rect, { text: HL.noteOf(HL.store.get(activeId)), placeholder });
+    HL.toolbar.showNote(
+      rect,
+      field === 'question'
+        ? { text: HL.questionOf(saved), placeholder: QUESTION_PROMPT, title: 'Learn more · your question', kind: 'question' }
+        : { text: HL.noteOf(saved), placeholder: 'Add a note…', title: 'Note', kind: 'note' }
+    );
   }
 
   // Highlights changed outside this tab (the library, the popup in another tab,
@@ -219,8 +239,11 @@
       if (h.id === activeId) HL.toolbar.hide();
     }
     for (const h of recolored) if (!h.bookmark) HL.marker.recolor(h.id, h.color);
-    for (const h of noted) HL.marker.setNote(h.id, h.note);
-    for (const h of flagged) HL.marker.setLearn(h.id, !!h.learn);
+    for (const h of noted) showNote(h);
+    for (const h of flagged) {
+      HL.marker.setLearn(h.id, !!h.learn);
+      showNote(h);
+    }
     if (added.length) {
       added.forEach((h) => unresolved.add(h.id));
       fastUntil = Date.now() + FAST_RETRY_MS;
@@ -237,11 +260,11 @@
 
   // `value` is the color for "color" and the typed text for "note-save".
   function onToolbarAction(action, value) {
-    if (action === 'note') {
-      openNoteEditor(); // keeps activeId for the editor's Save
+    if (action === 'note' || action === 'question') {
+      openEditor(action); // keeps activeId for the editor's Save
       return;
     }
-    if (action === 'learn' && toggleLearn()) return; // note editor open: keep activeId
+    if (action === 'learn' && toggleLearn()) return; // question box open: keep activeId
     if (action === 'color') {
       if (!HL.isColor(value)) return;
       if (activeId) recolor(activeId, value);
@@ -250,7 +273,7 @@
     } else if (action === 'bookmark' && !activeId) {
       bookmarkRange(pendingRange);
     } else if (action === 'note-save' && activeId) {
-      saveNote(activeId, value);
+      saveField(activeId, editingField, value);
     } else if (action === 'copy' && activeId) {
       const saved = HL.store.get(activeId);
       copyText(saved ? saved.text : HL.marker.getMarks(activeId).map((m) => m.textContent).join(''));
@@ -318,7 +341,8 @@
       colors,
       hasNote: !!HL.noteOf(saved),
       bookmark: !!(saved && saved.bookmark),
-      learn: !!(saved && saved.learn)
+      learn: !!(saved && saved.learn),
+      hasQuestion: !!HL.questionOf(saved)
     });
   }
 
@@ -410,6 +434,10 @@
       case HL.MSG.CLEAR:
         clearPage();
         return { ok: true };
+      case HL.MSG.SET_LEARN:
+        if (!HL.store.get(msg.id) || !['learn', 'learned', 'none'].includes(msg.state)) return { ok: false };
+        setLearnState(msg.id, msg.state);
+        return { ok: true };
       default:
         return undefined;
     }
@@ -430,6 +458,9 @@
       note: HL.noteOf(h) || undefined,
       bookmark: h.bookmark || undefined,
       learn: h.learn || undefined,
+      learnedAt: HL.learnStateOf(h) === 'learned' ? h.learnedAt : undefined,
+      question: HL.questionOf(h) || undefined,
+      answer: HL.answerOf(h) || undefined,
       createdAt: h.createdAt,
       found: !!mark
     }));

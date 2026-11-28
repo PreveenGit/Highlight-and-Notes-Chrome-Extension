@@ -354,7 +354,7 @@
         eq(md, '## [P](https://x.test/)\n\n> 🔖 Resume here\n', 'markdown');
       });
 
-      test('learn more: To learn filter, search, Markdown and withLearn', () => {
+      test('learn more: To learn filter, search and Markdown', () => {
         const pages = HL.data.toPages(STORAGE);
         pages[0].highlights = pages[0].highlights.map((h) => (h.id === 'f1' ? { ...h, learn: true } : h));
         pages[1].highlights = pages[1].highlights.map((h) => (h.id === 'd3' ? { ...h, learn: true } : h));
@@ -363,9 +363,6 @@
         eq(HL.data.filterAndSort(pages, {}).count, 5, 'other views unaffected');
         const md = HL.data.toMarkdown([{ title: 'P', url: 'https://x.test/', highlights: [{ text: 'Why?', learn: true }, { text: 'Both', learn: true, bookmark: true }] }]);
         eq(md, '## [P](https://x.test/)\n\n> ❓ Why?\n\n> 🔖 ❓ Both\n', 'markdown');
-        const base = hl('a', 'pink', 'A', 1);
-        eq(HL.withLearn(base, true).learn, true, 'set');
-        eq('learn' in HL.withLearn({ ...base, learn: true }, false), false, 'cleared');
       });
 
       test('withNote sets, trims and removes a note', () => {
@@ -544,19 +541,174 @@
         eq(ids(HL.diffHighlights(before, after).noted), 'a,b', 'added and removed notes; whitespace-only change ignored');
       });
 
-      const failed = results.filter((r) => !r.ok);
-      const summary = failed.length ? `FAIL ${failed.length}/${results.length}` : `PASS ${results.length}/${results.length}`;
-      document.title = summary;
-      document.getElementById('summary').textContent = summary;
-      document.getElementById('results').replaceChildren(
-        ...results.map((r) => {
-          const li = document.createElement('li');
-          li.className = r.ok ? 'pass' : 'fail';
-          li.textContent = r.ok ? r.name : `${r.name} — ${r.error}`;
-          return li;
-        })
-      );
-      window.harnessResults = results;
+      // ---- Learn more: its own question, and a Learned list ----
+
+      test('question and answer helpers trim, set and remove', () => {
+        const base = hl('a', 'pink', 'A', 1);
+        eq(HL.questionOf(HL.withQuestion(base, '  Why?  ')), 'Why?', 'question set and trimmed');
+        eq('question' in HL.withQuestion({ ...base, question: 'x' }, '  '), false, 'empty question removed');
+        eq(HL.answerOf(HL.withAnswer(base, ' Because. ')), 'Because.', 'answer set');
+        eq(HL.questionOf({ ...base, question: 5 }), '', 'non-string question ignored');
+      });
+
+      test('withLearnState moves between to learn, learned and none', () => {
+        const base = { ...hl('a', 'pink', 'A', 1), note: 'n', question: 'Why?', answer: 'Because.' };
+        const open = HL.withLearnState(base, 'learn');
+        eq(HL.learnStateOf(open) + ' ' + open.learn + ' ' + ('learnedAt' in open), 'learn true false', 'to learn');
+        const done = HL.withLearnState(open, 'learned', 1000);
+        eq(HL.learnStateOf(done) + ' ' + ('learn' in done) + ' ' + done.learnedAt, 'learned false 1000', 'learned, with the time');
+        eq(done.question + ' / ' + done.answer + ' / ' + done.note, 'Why? / Because. / n', 'question, answer and note kept');
+        eq(HL.withLearnState(done, 'learned', 2000).learnedAt, 1000, 'learning again keeps the first time');
+        eq('learnedAt' in HL.withLearnState(done, 'learn'), false, 'back to learn drops the time');
+        const none = HL.withLearnState(done, 'none');
+        eq(['learn', 'learnedAt', 'question', 'answer'].some((k) => k in none) + ' ' + none.note, 'false n', 'none drops the track, keeps the note');
+        eq(HL.learnStateOf(base), 'none', 'a question alone is not on the track');
+      });
+
+      test('tooltipOf shows the note, then the question, then what was learned', () => {
+        const h = { ...hl('a', 'pink', 'A', 1), note: 'My note', question: 'Why?', answer: 'Because.' };
+        eq(HL.tooltipOf(h), 'My note', 'question hidden when not on the track');
+        eq(HL.tooltipOf({ ...h, learn: true }), 'My note\n\nQuestion: Why?', 'to learn');
+        eq(HL.tooltipOf({ ...h, learnedAt: 5 }), 'My note\n\nQuestion: Why?\n\nLearned: Because.', 'learned');
+        eq(HL.tooltipOf({ ...hl('b', 'pink', 'B', 1), learn: true }), '', 'nothing to show');
+      });
+
+      test('diffHighlights reports question changes and learned moves', () => {
+        const before = [{ ...hl('a', 'pink', 'A', 1), learn: true, question: 'Q1' }, { ...hl('b', 'blue', 'B', 2), learn: true }];
+        const after = [{ ...hl('a', 'pink', 'A', 1), learn: true, question: 'Q2' }, { ...hl('b', 'blue', 'B', 2), learnedAt: 9 }];
+        const diff = HL.diffHighlights(before, after);
+        eq(ids(diff.noted), 'a', 'question change');
+        eq(ids(diff.flagged), 'b', 'moved to learned');
+      });
+
+      test("filterAndSort: 'open' and 'done', and search covers questions and answers", () => {
+        const pages = HL.data.toPages(STORAGE);
+        pages[0].highlights = pages[0].highlights.map((h) =>
+          h.id === 'f1' ? { ...h, learn: true, question: 'Who named it?' } : h.id === 'f2' ? { ...h, learnedAt: 7 * DAY, question: 'Where?', answer: 'Everywhere but Antarctica' } : h
+        );
+        pages[1].highlights = pages[1].highlights.map((h) => (h.id === 'd3' ? { ...h, learnedAt: 9 * DAY } : h));
+        eq(ids(HL.data.filterAndSort(pages, { learn: 'open' }).timeline.map((t) => t.highlight)), 'f1', 'to learn');
+        eq(ids(HL.data.filterAndSort(pages, { learn: 'done' }).timeline.map((t) => t.highlight)), 'd3,f2', 'learned, latest learned first');
+        eq(ids(HL.data.filterAndSort(pages, { query: 'named' }).timeline.map((t) => t.highlight)), 'f1', 'question text is searched');
+        eq(ids(HL.data.filterAndSort(pages, { query: 'antarctica' }).timeline.map((t) => t.highlight)), 'f2', 'answer text is searched');
+      });
+
+      test('Markdown export writes the question and what was learned', () => {
+        const md = HL.data.toMarkdown([
+          {
+            title: 'P',
+            url: 'https://x.test/',
+            highlights: [
+              { text: 'Open', learn: true, question: 'Why?', note: 'n' },
+              { text: 'Done', learnedAt: 1, question: 'How?', answer: 'Like this.' }
+            ]
+          }
+        ]);
+        eq(
+          md,
+          '## [P](https://x.test/)\n\n> ❓ Open\n\n**Note:** n\n\n**Question:** Why?\n\n> ✅ Done\n\n**Question:** How?\n\n**Learned:** Like this.\n',
+          'markdown'
+        );
+      });
+
+      test('backup v2 keeps the question, the learned time and the answer', () => {
+        const pages = [
+          {
+            url: 'https://a.test/',
+            title: 'A',
+            highlights: [
+              { ...hl('x', 'pink', 'X', 1), learn: true, question: 'Q', note: 'N' },
+              { ...hl('y', 'blue', 'Y', 2), learnedAt: 50, question: 'Q2', answer: 'A2' },
+              { ...hl('z', 'green', 'Z', 3), learnedAt: 'soon', answer: 7 }
+            ]
+          }
+        ];
+        const back = HL.data.parseBackup(JSON.stringify(HL.data.toBackup(pages)))[0].highlights;
+        eq([back[0].learn, back[0].question, back[0].note].join(), 'true,Q,N', 'to learn keeps question and note apart');
+        eq([back[1].learnedAt, back[1].question, back[1].answer].join(), '50,Q2,A2', 'learned');
+        eq(['learnedAt', 'answer'].some((k) => k in back[2]), false, 'bad values dropped');
+      });
+
+      test('a version 1 backup moves the Learn more note to the question', () => {
+        const file = JSON.stringify({
+          format: 'highlight-backup',
+          version: 1,
+          pages: [
+            {
+              url: 'https://a.test/',
+              highlights: [
+                { id: 'l', quote: { exact: 'a' }, learn: true, note: 'What is this?' },
+                { id: 'n', quote: { exact: 'b' }, note: 'Just a note' }
+              ]
+            }
+          ]
+        });
+        const [l, n] = HL.data.parseBackup(file)[0].highlights;
+        eq(l.question + ' ' + ('note' in l), 'What is this? false', 'moved');
+        eq(n.note + ' ' + ('question' in n), 'Just a note false', 'other notes stay notes');
+      });
+
+      test('moveLearnNotes moves only notes of highlights to learn without a question', () => {
+        const list = [
+          { id: 'a', learn: true, note: 'Q?' },
+          { id: 'b', learn: true, note: 'note', question: 'own' },
+          { id: 'c', note: 'plain' }
+        ];
+        const next = HL.moveLearnNotes(list);
+        eq(next[0].question + ' ' + ('note' in next[0]), 'Q? false', 'moved');
+        eq(next[1].note + ' ' + next[1].question, 'note own', 'existing question kept');
+        eq(next[2].note, 'plain', 'not to learn');
+        const clean = [{ id: 'd', note: 'x' }];
+        eq(HL.moveLearnNotes(clean), clean, 'unchanged list returned as is');
+      });
+
+      // Runs after the synchronous tests: migrateLearnQuestions against a fake
+      // chrome.storage.local, twice, to show it runs only once.
+      async function migrationTest() {
+        const name = 'migrateLearnQuestions moves old questions once';
+        const saved = globalThis.chrome;
+        try {
+          const data = {
+            settings: { defaultColor: 'blue' },
+            'hl:https://a.test/': { url: 'https://a.test/', highlights: [{ id: 'a', learn: true, note: 'Why?' }] }
+          };
+          globalThis.chrome = {
+            storage: {
+              local: {
+                get: async () => JSON.parse(JSON.stringify(data)),
+                set: async (items) => Object.assign(data, JSON.parse(JSON.stringify(items)))
+              }
+            }
+          };
+          eq(await HL.migrateLearnQuestions(), 1, 'one page changed');
+          eq(data['hl:https://a.test/'].highlights[0].question, 'Why?', 'note moved to question');
+          eq(data.settings.defaultColor + ' ' + data.settings.migrations.learnQuestions, 'blue true', 'settings kept, flag set');
+          data['hl:https://a.test/'].highlights[0] = { id: 'a', learn: true, note: 'New note' };
+          eq(await HL.migrateLearnQuestions(), 0, 'second run does nothing');
+          eq(data['hl:https://a.test/'].highlights[0].note, 'New note', 'later notes untouched');
+          results.push({ name, ok: true });
+        } catch (err) {
+          results.push({ name, ok: false, error: err.message });
+        } finally {
+          globalThis.chrome = saved;
+        }
+      }
+
+      migrationTest().then(() => {
+        const failed = results.filter((r) => !r.ok);
+        const summary = failed.length ? `FAIL ${failed.length}/${results.length}` : `PASS ${results.length}/${results.length}`;
+        document.title = summary;
+        document.getElementById('summary').textContent = summary;
+        document.getElementById('results').replaceChildren(
+          ...results.map((r) => {
+            const li = document.createElement('li');
+            li.className = r.ok ? 'pass' : 'fail';
+            li.textContent = r.ok ? r.name : `${r.name} — ${r.error}`;
+            return li;
+          })
+        );
+        window.harnessResults = results;
+      });
     </script>
   </body>
 </html>

@@ -5,7 +5,12 @@
   const HL = globalThis.HL;
   const $ = (id) => document.getElementById(id);
   const TIMELINE_PAGE = 200;
-  const LEARN_PROMPT = 'What do you want to learn about this?'; // note box placeholder
+  // The text box for each field: placeholder and label.
+  const EDITORS = {
+    note: { placeholder: 'Add a note…', label: 'Note' },
+    question: { placeholder: 'What do you want to find out?', label: 'Your question' },
+    answer: { placeholder: 'What did you learn?', label: 'What I learned' }
+  };
 
   const ICONS = {
     chevron: 'M16.59 8.59 12 13.17 7.41 8.59 6 10l6 6 6-6z',
@@ -37,8 +42,14 @@
     sort: 'newest',
     collapsed: new Set(),
     timelineLimit: TIMELINE_PAGE,
-    editing: null // note being edited: { key, id, draft }; survives re-renders
+    editing: null, // text being edited: { key, id, field: 'note'|'question'|'answer', draft }; survives re-renders
+    learnView: 'open' // To learn tab: 'open' (to learn) or 'done' (learned)
   };
+  // library.html#learn / #learned opens the To learn tab (the popup links there).
+  if (location.hash === '#learn' || location.hash === '#learned') {
+    state.view = 'learn';
+    state.learnView = location.hash === '#learned' ? 'done' : 'open';
+  }
   let pages = []; // every stored page (HL.data.toPages)
   let settings = HL.cleanSettings(); // for the palette (custom colors)
   let current = null; // side panel: the active tab's page, as its content script reports it
@@ -97,7 +108,7 @@
 
   // In the "To learn" view only highlights marked "learn more" are shown (and exported).
   function filters() {
-    return { query: state.query, colors: [...state.colors], sort: state.sort, learn: state.view === 'learn' };
+    return { query: state.query, colors: [...state.colors], sort: state.sort, learn: state.view === 'learn' ? state.learnView : false };
   }
 
   // The page as currently shown, i.e. with search and color filters applied.
@@ -288,11 +299,12 @@
     return timelineList(timeline);
   }
 
-  // Every highlight marked "learn more", on any page: a header, then one study card
-  // per passage with its question first.
+  // Learn more on every page: a header with progress and a To learn / Learned
+  // switch, then one study card per passage with its question first.
   function renderLearn() {
-    const total = learnCount();
-    if (!total) {
+    const open = learnCount();
+    const done = learnedCount();
+    if (!open && !done) {
       return [
         empty(
           'Nothing marked to learn yet. Click Learn more on a highlight here, or select text on a page and click the graduation-cap button in the toolbar.',
@@ -300,11 +312,20 @@
         )
       ];
     }
+    const learned = state.learnView === 'done';
     const { timeline } = HL.data.filterAndSort(pages, filters());
-    if (!timeline.length) return [learnHeader(total, 0), empty('Nothing to learn matches your search.', 'learn')];
+    const head = learnHeader(open, done, timeline.length);
+    if (!timeline.length) {
+      const message = (learned ? done : open)
+        ? learned ? 'Nothing learned matches your search.' : 'Nothing to learn matches your search.'
+        : learned
+          ? 'Nothing learned yet. Click Got it on a passage once you understand it.'
+          : 'All caught up: nothing left to learn.';
+      return [head, empty(message, learned ? 'check' : 'learn')];
+    }
     const list = el('ul', 'learn-list');
     list.append(...timeline.slice(0, state.timelineLimit).map(({ highlight, page }) => learnCard(highlight, page)));
-    const out = [learnHeader(total, timeline.length), list];
+    const out = [head, list];
     const left = timeline.length - state.timelineLimit;
     if (left > 0) {
       const more = el('button', 'more');
@@ -316,53 +337,89 @@
     return out;
   }
 
-  function learnHeader(total, shown) {
+  // "3 to learn · 5 learned", a progress bar, and the To learn / Learned switch.
+  function learnHeader(open, done, shown) {
     const head = el('div', 'learn-head');
+    const top = el('div', 'learn-head-top');
     const icon = el('span', 'learn-head-icon');
     icon.innerHTML = `<svg viewBox="0 0 24 24" aria-hidden="true"><path d="${ICONS.learn}"/></svg>`;
     const text = el('div', 'learn-head-text');
     const title = el('h2');
-    title.textContent = `${total} passage${plural(total)} to learn`;
+    title.textContent = open ? `${open} passage${plural(open)} to learn` : 'All caught up';
     const sub = el('p');
+    const total = state.learnView === 'done' ? done : open;
     sub.textContent =
       shown < total
         ? `Showing ${shown} that match your filters.`
-        : 'Click a passage to read it in context. Click Got it once you understand it.';
+        : done
+          ? `${done} learned so far${open ? ` · ${open} to go` : ''}.`
+          : 'Click Got it on a passage once you understand it.';
     text.append(title, sub);
-    head.append(icon, text);
+    top.append(icon, text);
+
+    const progress = el('div', 'learn-progress');
+    progress.setAttribute('role', 'progressbar');
+    progress.setAttribute('aria-label', 'Learned');
+    progress.setAttribute('aria-valuemin', '0');
+    progress.setAttribute('aria-valuemax', String(open + done));
+    progress.setAttribute('aria-valuenow', String(done));
+    const fill = el('span');
+    fill.style.width = `${open + done ? Math.round((done / (open + done)) * 100) : 0}%`;
+    progress.append(fill);
+
+    const tabs = el('div', 'learn-switch');
+    tabs.setAttribute('role', 'tablist');
+    tabs.setAttribute('aria-label', 'Learn more');
+    for (const [view, label, n] of [['open', 'To learn', open], ['done', 'Learned', done]]) {
+      const b = el('button');
+      b.type = 'button';
+      b.setAttribute('role', 'tab');
+      b.dataset.action = 'learn-view';
+      b.dataset.view = view;
+      b.setAttribute('aria-selected', String(state.learnView === view));
+      const count = el('span', 'switch-count');
+      count.textContent = String(n);
+      b.append(label, count);
+      tabs.append(b);
+    }
+
+    head.append(top, progress, tabs);
     return head;
   }
 
-  // A passage to learn: the question (its note), the passage in its highlight
-  // color, where it's from, and Got it.
+  // A passage on the Learn more track: the question first, the passage in its
+  // highlight color, the note, then (learned) what was learned; where it's from,
+  // and Got it or Learn again.
   function learnCard(h, page) {
+    const learned = HL.learnStateOf(h) === 'learned';
     const card = el('li', 'learn-card');
+    card.classList.toggle('learned', learned);
     card.dataset.key = page.key;
     card.dataset.id = h.id;
     const terms = HL.data.searchTerms(state.query);
-    const note = HL.noteOf(h);
-    const editing = !!state.editing && state.editing.id === h.id && state.editing.key === page.key;
+    const editing = (field) => !!state.editing && state.editing.id === h.id && state.editing.key === page.key && state.editing.field === field;
 
-    const question = el('div', 'learn-q');
+    const question = HL.questionOf(h);
+    const row = el('div', 'learn-q');
     const mark = el('span', 'q-mark');
-    mark.textContent = '?';
+    mark.textContent = learned ? '✓' : '?';
     mark.setAttribute('aria-hidden', 'true');
-    question.append(mark);
-    if (editing) {
+    row.append(mark);
+    if (editing('question')) {
       const label = el('span', 'q-label');
       label.textContent = 'Your question';
-      question.append(label);
+      row.append(label);
     } else {
-      const text = el('button', note ? 'q-text' : 'q-text blank');
+      const text = el('button', question ? 'q-text' : 'q-text blank');
       text.type = 'button';
-      text.dataset.action = 'note';
-      text.title = note ? 'Edit question' : 'Add a question';
-      if (note) appendWithHits(text, note, terms);
-      else text.textContent = 'What do you want to find out? Add a question';
-      question.append(text);
+      text.dataset.action = 'question';
+      text.title = question ? 'Edit question' : 'Add a question';
+      if (question) appendWithHits(text, question, terms);
+      else text.textContent = learned ? 'Add the question you had' : 'What do you want to find out? Add a question';
+      row.append(text);
     }
-    card.append(question);
-    if (editing) card.append(noteEditor());
+    card.append(row);
+    if (editing('question')) card.append(noteEditor());
 
     const passage = el('div', 'learn-passage');
     passage.dataset.action = 'open';
@@ -375,25 +432,69 @@
     passage.append(text);
     card.append(passage);
 
+    // The note, if any, stays a note.
+    const note = HL.noteOf(h);
+    if (editing('note')) card.append(noteEditor());
+    else if (note) {
+      const noteEl = el('button', 'user-note');
+      noteEl.type = 'button';
+      noteEl.dataset.action = 'note';
+      noteEl.title = 'Edit note';
+      appendWithHits(noteEl, note, terms);
+      card.append(noteEl);
+    }
+
+    // Learned: what was learned.
+    if (learned) {
+      const answer = HL.answerOf(h);
+      if (editing('answer')) card.append(noteEditor());
+      else if (answer) {
+        const box = el('button', 'learned-answer');
+        box.type = 'button';
+        box.dataset.action = 'answer';
+        box.title = 'Edit what you learned';
+        const label = el('span', 'answer-label');
+        label.textContent = 'What I learned';
+        const body = el('span');
+        appendWithHits(body, answer, terms);
+        box.append(label, body);
+        card.append(box);
+      }
+    }
+
     const foot = el('div', 'learn-foot');
     const source = el('span', 'learn-src');
     const where = el('span');
-    where.textContent = [page.title, ago(h.createdAt)].filter(Boolean).join(' · ');
+    where.textContent = [page.title, learned ? `learned ${ago(h.learnedAt)}` : ago(h.createdAt)].filter(Boolean).join(' · ');
     where.title = page.url;
     source.append(favicon(page), where);
     const tools = el('div', 'learn-tools');
-    const got = pillButton('check', 'Got it', 'learn', 'Got it: clear Learn more');
-    got.classList.add('got');
     const extra = el('div', 'item-actions');
-    extra.append(iconButton('copy', 'Copy text', 'copy'), iconButton('delete', 'Delete highlight', 'delete'));
-    tools.append(extra, got);
+    extra.append(
+      iconButton('copy', 'Copy text', 'copy'),
+      ...(learned ? [iconButton('close', 'Remove from Learned', 'unlearn')] : []),
+      iconButton('delete', 'Delete highlight', 'delete')
+    );
+    tools.append(extra);
+    if (learned) {
+      if (!HL.answerOf(h) && !editing('answer')) tools.append(pillButton('note', 'Add what you learned', 'answer'));
+      tools.append(pillButton('learn', 'Learn again', 'learn-again', 'Move back to To learn'));
+    } else {
+      const got = pillButton('check', 'Got it', 'learn', 'Got it: move to Learned');
+      got.classList.add('got');
+      tools.append(got);
+    }
     foot.append(source, tools);
     card.append(foot);
     return card;
   }
 
   function learnCount() {
-    return pages.reduce((n, p) => n + p.highlights.filter((h) => h.learn).length, 0);
+    return pages.reduce((n, p) => n + p.highlights.filter((h) => HL.learnStateOf(h) === 'learn').length, 0);
+  }
+
+  function learnedCount() {
+    return pages.reduce((n, p) => n + p.highlights.filter((h) => HL.learnStateOf(h) === 'learned').length, 0);
   }
 
   // The timeline: highlights grouped by day ("Today", "Yesterday", ...) on a rail,
@@ -545,7 +646,10 @@
 
     const terms = HL.data.searchTerms(state.query);
     const note = HL.noteOf(h);
-    const editing = !!state.editing && state.editing.id === h.id && state.editing.key === page.key;
+    const learnState = HL.learnStateOf(h);
+    const question = learnState === 'none' ? '' : HL.questionOf(h);
+    const editingField = !!state.editing && state.editing.id === h.id && state.editing.key === page.key ? state.editing.field : null;
+    const editing = !!editingField;
 
     const main = el('div', 'item-main');
     main.dataset.action = 'open';
@@ -556,14 +660,27 @@
     appendWithHits(text, String(h.text || ''), terms);
     main.append(text);
 
-    // The note is its own button: clicking it edits it.
+    // The note and the Learn more question are their own buttons: clicking one edits it.
     let noteEl = null;
-    if (note && !editing) {
+    if (note && editingField !== 'note') {
       noteEl = el('button', 'user-note');
       noteEl.type = 'button';
       noteEl.dataset.action = 'note';
       noteEl.title = 'Edit note';
       appendWithHits(noteEl, note, terms);
+    }
+    let questionEl = null;
+    if (question && editingField !== 'question') {
+      questionEl = el('button', 'item-question');
+      questionEl.type = 'button';
+      questionEl.dataset.action = 'question';
+      questionEl.title = 'Edit question';
+      const mark = el('span', 'q-mark small');
+      mark.textContent = '?';
+      mark.setAttribute('aria-hidden', 'true');
+      const body = el('span');
+      appendWithHits(body, question, terms);
+      questionEl.append(mark, body);
     }
 
     const meta = el('span', 'meta');
@@ -572,9 +689,9 @@
       tag.textContent = 'Bookmark';
       meta.append(tag);
     }
-    if (h.learn) {
-      const tag = el('span', 'learn-tag');
-      tag.textContent = 'Learn more';
+    if (learnState !== 'none') {
+      const tag = el('span', learnState === 'learn' ? 'learn-tag' : 'learned-tag');
+      tag.textContent = learnState === 'learn' ? 'Learn more' : 'Learned';
       meta.append(tag);
     }
     // On the timeline (showPage) the day is the heading, so the time of day is
@@ -594,6 +711,7 @@
     const body = el('div', 'item-body');
     body.append(main);
     if (noteEl) body.append(noteEl);
+    if (questionEl) body.append(questionEl);
     // The meta line and the tools share a row when there's room. The tools are the
     // quick actions (always visible, so notes and Learn more are easy to find) and
     // the color/copy/delete icons, which show on hover but keep their place so
@@ -602,12 +720,15 @@
     const tools = el('div', 'tools');
     if (!editing) {
       if (!note) tools.append(pillButton('note', 'Add note', 'note'));
-      tools.append(
-        h.learn
-          ? pillButton('check', 'Got it', 'learn', 'Got it: clear Learn more')
-          : pillButton('learn', 'Learn more', 'learn', 'Mark to learn more and write what to look into')
-      );
-      tools.lastChild.classList.add('learn', ...(h.learn ? ['on'] : []));
+      // Learned passages are managed in the To learn tab (Learned), so no button here.
+      if (learnState !== 'learned') {
+        tools.append(
+          learnState === 'learn'
+            ? pillButton('check', 'Got it', 'learn', 'Got it: move to Learned')
+            : pillButton('learn', 'Learn more', 'learn', 'Mark to learn more and write what you want to find out')
+        );
+        tools.lastChild.classList.add('learn', ...(learnState === 'learn' ? ['on'] : []));
+      }
     }
     const actions = el('div', 'item-actions');
     actions.append(
@@ -641,14 +762,20 @@
     return li;
   }
 
+  // The text box for the note, the Learn more question or what was learned
+  // (state.editing.field), with a small label.
   function noteEditor() {
-    const box = el('div', 'note-editor');
+    const kind = EDITORS[state.editing.field] || EDITORS.note;
+    const box = el('div', `note-editor ${state.editing.field || 'note'}`);
     box.dataset.action = 'noop'; // clicks inside must not open the highlight
+    const label = el('span', 'editor-label');
+    label.textContent = kind.label;
+    box.append(label);
     const area = el('textarea');
     area.value = state.editing.draft;
     area.rows = 3;
-    area.placeholder = state.editing.placeholder || 'Add a note…';
-    area.setAttribute('aria-label', 'Note');
+    area.placeholder = kind.placeholder;
+    area.setAttribute('aria-label', kind.label);
     area.addEventListener('input', () => {
       if (state.editing) state.editing.draft = area.value;
     });
@@ -1025,34 +1152,45 @@
           }
         });
         break;
-      case 'note': {
-        if (state.editing && state.editing.id === id && state.editing.key === key) break;
-        if (state.editing) await saveNote(); // keep what was typed in another note
-        const page = findPage(key);
-        const h = page && page.highlights.find((x) => x.id === id);
-        // On a passage to learn, the note is the question.
-        state.editing = { key, id, draft: HL.noteOf(h), placeholder: h && h.learn ? LEARN_PROMPT : undefined };
-        render();
+      case 'note':
+      case 'question':
+      case 'answer':
+        await editField(key, id, action);
         break;
-      }
       case 'learn': {
-        const page = findPage(key);
-        const h = page && page.highlights.find((x) => x.id === id);
+        // Learn more (then ask the question), or Got it (move to Learned).
+        const h = findHighlight(key, id);
         if (!h) break;
-        if (h.learn) {
-          await updateHighlight(key, id, (x) => HL.withLearn(x, false));
-          toast('Marked as understood', () => updateHighlight(key, id, (x) => HL.withLearn(x, true)));
+        if (HL.learnStateOf(h) === 'learn') {
+          await updateHighlight(key, id, (x) => HL.withLearnState(x, 'learned'));
+          toast('Moved to Learned', () => updateHighlight(key, id, (x) => HL.withLearnState(x, 'learn')));
           break;
         }
-        await updateHighlight(key, id, (x) => HL.withLearn(x, true));
-        if (!HL.noteOf(h)) {
-          // Ask what to learn: open the note box with a prompt.
-          if (state.editing) await saveNote();
-          state.editing = { key, id, draft: '', placeholder: LEARN_PROMPT };
-          render();
+        await updateHighlight(key, id, (x) => HL.withLearnState(x, 'learn'));
+        await editField(key, id, 'question');
+        break;
+      }
+      case 'learn-again': {
+        const before = findHighlight(key, id);
+        const learnedAt = before && before.learnedAt;
+        await updateHighlight(key, id, (x) => HL.withLearnState(x, 'learn'));
+        toast('Moved back to To learn', () => updateHighlight(key, id, (x) => HL.withLearnState({ ...x, learnedAt }, 'learned')));
+        break;
+      }
+      case 'unlearn': {
+        const before = findHighlight(key, id);
+        await updateHighlight(key, id, (x) => HL.withLearnState(x, 'none'));
+        if (before) {
+          const keep = { question: before.question, answer: before.answer, learnedAt: before.learnedAt };
+          toast('Removed from Learned', () => updateHighlight(key, id, (x) => ({ ...x, ...keep })));
         }
         break;
       }
+      case 'learn-view':
+        state.learnView = target.dataset.view;
+        state.timelineLimit = TIMELINE_PAGE;
+        render();
+        break;
       case 'note-save':
         await saveNote();
         break;
@@ -1100,11 +1238,30 @@
     }
   }
 
+  function findHighlight(key, id) {
+    const page = findPage(key);
+    return page && page.highlights.find((h) => h.id === id);
+  }
+
+  // Opens the text box for a highlight's note, Learn more question or what was
+  // learned, saving any other open box first.
+  async function editField(key, id, field) {
+    const edit = state.editing;
+    if (edit && edit.id === id && edit.key === key && edit.field === field) return;
+    if (edit) await saveNote(); // keep what was typed in another box
+    const h = findHighlight(key, id);
+    const read = { note: HL.noteOf, question: HL.questionOf, answer: HL.answerOf }[field];
+    state.editing = { key, id, field, draft: read(h) };
+    render();
+  }
+
+  // Saves the open text box to its field.
   async function saveNote() {
     const edit = state.editing;
     if (!edit) return;
     state.editing = null;
-    await updateHighlight(edit.key, edit.id, (h) => HL.withNote(h, edit.draft));
+    const write = { note: HL.withNote, question: HL.withQuestion, answer: HL.withAnswer }[edit.field] || HL.withNote;
+    await updateHighlight(edit.key, edit.id, (h) => write(h, edit.draft));
   }
 
   // Saves a change to one highlight, then shows it right away rather than after the
@@ -1158,7 +1315,10 @@
     const source = state.view === 'page' ? (isCurrentAvailable() ? [currentPage()] : []) : pages;
     const shown = HL.data.filterAndSort(source, filters()).pages;
     if (!shown.length) return toast('Nothing to export.');
-    const filtered = state.view === 'learn' ? ' (to learn)' : state.query.trim() || state.colors.size ? ' (filtered)' : '';
+    const filtered =
+      state.view === 'learn'
+        ? state.learnView === 'done' ? ' (learned)' : ' (to learn)'
+        : state.query.trim() || state.colors.size ? ' (filtered)' : '';
     const header = `# Highlights\n\nExported ${new Date().toLocaleString()}${filtered}\n\n`;
     download(`highlights-${today()}.md`, header + HL.data.toMarkdown(shown), 'text/markdown');
   }

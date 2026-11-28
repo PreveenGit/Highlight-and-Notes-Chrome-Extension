@@ -136,13 +136,16 @@
     marks.forEach((mark, i) => mark.classList.toggle(LEARN_CLASS, !!on && i === marks.length - 1));
   }
 
-  // Shows a note as a hover tooltip on every mark and a badge after the last one.
-  // The badge is a CSS ::after, so the page text (and the anchor index) is unchanged.
-  function setNote(id, note) {
+  // Shows a badge after the last mark when there is a note, and a hover tooltip on
+  // every mark: `tooltip` (the note plus any Learn more question; see HL.tooltipOf),
+  // or the note itself. The badge is a CSS ::after, so the page text (and the anchor
+  // index) is unchanged.
+  function setNote(id, note, tooltip = note) {
     const text = typeof note === 'string' ? note.trim() : '';
+    const tip = typeof tooltip === 'string' ? tooltip.trim() : '';
     const marks = getMarks(id);
     marks.forEach((mark, i) => {
-      if (text) mark.title = text;
+      if (tip) mark.title = tip;
       else mark.removeAttribute('title');
       mark.classList.toggle(NOTE_CLASS, !!text && i === marks.length - 1);
     });

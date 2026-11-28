@@ -1,13 +1,14 @@
-// Popup: lists the current page's highlights and holds the settings, including
-// the user's own highlight colors. It talks to the page's content script, so it
-// needs no "tabs" permission.
+// Popup: this page's highlights at a glance, and the settings (on a screen of their
+// own), including the user's own highlight colors. It talks to the page's content
+// script, so it needs no "tabs" permission.
 (async () => {
   const HL = globalThis.HL;
   const $ = (id) => document.getElementById(id);
 
   const ICONS = {
     close: 'M19 6.41 17.59 5 12 10.59 6.41 5 5 6.41 10.59 12 5 17.59 6.41 19 12 13.41 17.59 19 19 17.59 13.41 12z',
-    plus: 'M19 13h-6v6h-2v-6H5v-2h6V5h2v6h6v2z'
+    plus: 'M19 13h-6v6h-2v-6H5v-2h6V5h2v6h6v2z',
+    check: 'M9 16.17 4.83 12l-1.42 1.41L9 19 21 7l-1.41-1.41z'
   };
 
   const [tab] = await chrome.tabs.query({ active: true, currentWindow: true });
@@ -34,6 +35,13 @@
     return el;
   }
 
+  function el(tag, className, text) {
+    const node = document.createElement(tag);
+    if (className) node.className = className;
+    if (text !== undefined) node.textContent = text;
+    return node;
+  }
+
   // ---- This page -----------------------------------------------------------
 
   async function refresh() {
@@ -45,16 +53,21 @@
     $('unavailable').hidden = !!page;
     $('page').hidden = !page;
     $('site').textContent = page ? HL.data.siteOf(page.url) : '';
-    if (page) renderList();
+    if (page) renderPage();
   }
 
-  function renderList() {
+  function renderPage() {
     const { highlights } = page;
     const n = highlights.length;
-    $('count').textContent = n ? String(n) : '';
-    $('count').title = n ? `${n} highlight${n === 1 ? '' : 's'}` : '';
+    const toLearn = highlights.filter((h) => h.learn).length;
+    $('statHighlights').textContent = String(n);
+    $('statNotes').textContent = String(highlights.filter((h) => h.note).length);
+    $('statLearnCount').textContent = String(toLearn);
+    $('statLearn').classList.toggle('on', toLearn > 0);
+
     $('empty').hidden = n > 0;
     $('list').hidden = n === 0;
+    $('listHead').hidden = n === 0;
     $('copy').disabled = n === 0;
     $('clear').disabled = n === 0;
 
@@ -72,52 +85,50 @@
     $('list').replaceChildren(...highlights.map(listItem));
   }
 
+  // One highlight on the rail: a dot in its color, the text with its tags, the
+  // note, and the Learn more question with Got it.
   function listItem(h) {
-    const li = document.createElement('li');
+    const li = el('li', 'rail-item');
     li.classList.toggle('orphan', !h.found);
+    li.style.setProperty('--dot', h.bookmark ? 'var(--accent)' : HL.colorValue(h.color));
     li.title = h.found ? 'Show on page' : '';
 
-    const bar = document.createElement('span');
-    bar.className = h.bookmark ? 'bar bookmark' : 'bar';
-    if (!h.bookmark) bar.style.background = HL.colorValue(h.color);
-
-    const text = document.createElement('span');
-    text.className = 'text';
-    text.textContent = h.text;
-    if (!h.found) {
-      const note = document.createElement('span');
-      note.className = 'note';
-      note.textContent = 'Not found on the page right now';
-      text.prepend(note);
-    }
-    if (h.bookmark) {
-      const tag = document.createElement('span');
-      tag.className = 'tag';
-      tag.textContent = 'Bookmark';
-      text.append(tag);
-    }
-    if (h.learn) {
-      const badge = document.createElement('span');
-      badge.className = 'learn-badge';
-      badge.textContent = '?';
-      badge.title = 'Marked to learn more';
-      text.append(badge);
-    }
-
-    const body = document.createElement('div');
-    body.className = 'body';
+    const body = el('div', 'body');
+    const text = el('span', 'text', h.text);
+    if (!h.found) text.prepend(el('span', 'note', 'Not found on the page right now'));
     body.append(text);
-    if (h.note) {
-      const userNote = document.createElement('span');
-      userNote.className = 'user-note';
-      userNote.textContent = h.note;
-      body.append(userNote);
+
+    const tags = [];
+    if (h.bookmark) tags.push(el('span', 'tag bookmark', 'Bookmark'));
+    if (h.learnedAt) tags.push(el('span', 'tag learned', 'Learned'));
+    if (tags.length) {
+      const row = el('span', 'tags');
+      row.append(...tags);
+      body.append(row);
+    }
+
+    if (h.note) body.append(el('span', 'user-note', h.note));
+
+    if (h.learn) {
+      const box = el('div', 'learn-row');
+      const question = el('span', 'question');
+      question.append(el('span', 'q-mark', '?'), el('span', h.question ? '' : 'muted', h.question || 'Marked to learn more'));
+      const got = el('button', 'got');
+      got.type = 'button';
+      got.title = 'Got it: move to Learned';
+      got.append(svg(ICONS.check), el('span', '', 'Got it'));
+      got.addEventListener('click', async (e) => {
+        e.stopPropagation();
+        await send({ type: HL.MSG.SET_LEARN, id: h.id, state: 'learned' }).catch(() => null);
+        await refresh();
+      });
+      box.append(question, got);
+      body.append(box);
     }
 
     const label = h.bookmark ? 'Remove bookmark' : 'Remove highlight';
-    const remove = document.createElement('button');
+    const remove = el('button', 'remove');
     remove.type = 'button';
-    remove.className = 'remove';
     remove.title = label;
     remove.setAttribute('aria-label', label);
     remove.append(svg(ICONS.close));
@@ -128,7 +139,7 @@
     });
 
     if (h.found) li.addEventListener('click', () => send({ type: HL.MSG.SCROLL_TO, id: h.id }));
-    li.append(bar, body, remove);
+    li.append(body, remove);
     return li;
   }
 
@@ -137,6 +148,12 @@
     const res = await send({ type: HL.MSG.SCROLL_TO, id: $('jump').dataset.id }).catch(() => null);
     if (res && res.ok) window.close();
     else await refresh();
+  });
+
+  // The To learn tile opens the To learn list in the library.
+  $('statLearn').addEventListener('click', () => {
+    chrome.tabs.create({ url: chrome.runtime.getURL('library/library.html#learn') });
+    window.close();
   });
 
   $('copy').addEventListener('click', async () => {
@@ -179,6 +196,24 @@
     setTimeout(() => (label.textContent = original), 1200);
   }
 
+  // ---- Settings screen -----------------------------------------------------
+
+  function showSettings(open) {
+    $('mainView').hidden = open;
+    $('settingsView').hidden = !open;
+    (open ? $('closeSettings') : $('openSettings')).focus();
+    if (!open) closeAddColor();
+  }
+
+  $('openSettings').addEventListener('click', () => showSettings(true));
+  $('closeSettings').addEventListener('click', () => showSettings(false));
+  document.addEventListener('keydown', (e) => {
+    if (e.key === 'Escape' && !$('settingsView').hidden && $('addColor').hidden) {
+      e.preventDefault();
+      showSettings(false);
+    }
+  });
+
   // ---- Colors --------------------------------------------------------------
 
   async function saveSettings(patch) {
@@ -192,9 +227,8 @@
     const custom = HL.customColors(settings);
     const items = HL.palette(settings).map((color) => {
       const label = HL.colorLabel(color);
-      const b = document.createElement('button');
+      const b = el('button', 'swatch');
       b.type = 'button';
-      b.className = 'swatch';
       b.setAttribute('role', 'radio');
       b.setAttribute('aria-checked', String(color === settings.defaultColor));
       b.setAttribute('aria-label', label);
@@ -204,24 +238,21 @@
       b.addEventListener('click', () => saveSettings({ defaultColor: color }));
       if (!custom.includes(color)) return b;
 
-      const remove = document.createElement('button');
+      const remove = el('button', 'swatch-remove');
       remove.type = 'button';
-      remove.className = 'swatch-remove';
       remove.title = `Remove ${label}`;
       remove.setAttribute('aria-label', `Remove ${label}`);
       remove.append(svg(ICONS.close));
       remove.addEventListener('click', () => removeColor(color));
-      const wrap = document.createElement('span');
-      wrap.className = 'swatch-wrap';
+      const wrap = el('span', 'swatch-wrap');
       wrap.append(b, remove);
       return wrap;
     });
 
     if (custom.length < HL.MAX_CUSTOM_COLORS) {
-      const add = document.createElement('button');
+      const add = el('button', 'swatch add');
       add.type = 'button';
       add.id = 'addButton';
-      add.className = 'swatch add';
       add.title = 'Add your own color';
       add.setAttribute('aria-label', 'Add your own color');
       add.setAttribute('aria-expanded', String(!$('addColor').hidden));
@@ -248,7 +279,7 @@
     const choices = HL.SUGGESTED_COLORS.filter((c) => !taken.includes(c));
     $('suggestions').replaceChildren(
       ...choices.map((color) => {
-        const b = document.createElement('button');
+        const b = el('button');
         b.type = 'button';
         b.dataset.color = color;
         b.title = color.toUpperCase();
@@ -294,6 +325,7 @@
   $('addColor').addEventListener('keydown', (e) => {
     if (e.key !== 'Escape') return;
     e.preventDefault();
+    e.stopPropagation();
     closeAddColor();
     $('addButton')?.focus();
   });
