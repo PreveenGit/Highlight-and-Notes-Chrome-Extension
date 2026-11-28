@@ -68,6 +68,9 @@ Read freely: no account needed, and nothing leaves your computer.
 • Your highlights stay on your computer, in Chrome's local storage.
 • No servers, no tracking, no ads.
 
+NEW HERE?
+A built-in guide (the "?" in the toolbar popup) walks you through every feature, lists your shortcuts, and has a practice area where you can try everything without saving anything.
+
 Works on most web pages. Chrome doesn't allow extensions on chrome:// pages, the Chrome Web Store or the built-in PDF viewer.
 ```
 

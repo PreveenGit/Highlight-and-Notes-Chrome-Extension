@@ -99,6 +99,77 @@ h1 {
   fill: currentColor;
 }
 
+/* The guide's "?" with a "New" dot after a feature update. */
+.guide-btn {
+  position: relative;
+}
+
+.new-dot {
+  position: absolute;
+  top: 6px;
+  right: 6px;
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: var(--danger);
+  box-shadow: 0 0 0 2px var(--bg);
+}
+
+/* "How Highlight works" at the bottom of Settings. */
+.guide-card {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  width: calc(100% - 24px);
+  margin: 0 12px 12px;
+  padding: 12px;
+  border: 1px solid color-mix(in srgb, var(--accent) 30%, var(--line));
+  border-radius: 14px;
+  background: color-mix(in srgb, var(--accent) 6%, var(--bg));
+  color: var(--fg);
+  font: inherit;
+  text-align: left;
+  cursor: pointer;
+  transition: border-color 0.15s, background-color 0.15s;
+}
+
+.guide-card:hover {
+  border-color: var(--accent);
+  background: color-mix(in srgb, var(--accent) 10%, var(--bg));
+}
+
+.guide-card-icon {
+  flex: none;
+  display: grid;
+  place-items: center;
+  width: 34px;
+  height: 34px;
+  border-radius: 10px;
+  background: color-mix(in srgb, var(--accent) 16%, var(--bg));
+  color: var(--accent);
+}
+
+.guide-card-icon svg {
+  width: 18px;
+  height: 18px;
+  fill: currentColor;
+}
+
+.guide-card-text {
+  display: flex;
+  flex-direction: column;
+  gap: 1px;
+}
+
+.guide-card-text strong {
+  font-weight: 650;
+}
+
+.guide-card-text span {
+  color: var(--muted);
+  font-size: 12px;
+}
+
 /* ---- This page ----------------------------------------------------------- */
 
 main {

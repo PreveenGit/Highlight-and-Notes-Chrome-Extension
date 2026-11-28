@@ -196,6 +196,21 @@
     setTimeout(() => (label.textContent = original), 1200);
   }
 
+  // ---- The guide -------------------------------------------------------------
+
+  // A "New" dot on the "?" until the guide has been opened since the last
+  // feature update (the guide records the major.minor version it was seen at).
+  const featureVersion = chrome.runtime.getManifest().version.split('.').slice(0, 2).join('.');
+  $('guideDot').hidden = settings.guideSeen === featureVersion;
+  if (!$('guideDot').hidden) $('openGuide').title = "How Highlight works · What's new";
+
+  function openGuide() {
+    chrome.tabs.create({ url: chrome.runtime.getURL(`guide/guide.html${$('guideDot').hidden ? '' : '#whats-new'}`) });
+    window.close();
+  }
+  $('openGuide').addEventListener('click', openGuide);
+  $('guideLink').addEventListener('click', openGuide);
+
   // ---- Settings screen -----------------------------------------------------
 
   function showSettings(open) {

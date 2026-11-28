@@ -27,6 +27,7 @@
 
   function mutate(change) {
     highlights = change(highlights);
+    if (HL.demo) return Promise.resolve(); // the guide's practice area: memory only
     const k = key;
     const meta = { url: location.href, title: document.title };
     pendingWrites++;

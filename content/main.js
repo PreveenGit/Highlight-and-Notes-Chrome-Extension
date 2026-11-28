@@ -259,7 +259,7 @@
   function rememberColor(color) {
     if (settings.defaultColor !== color) {
       settings.defaultColor = color;
-      HL.setSettings({ defaultColor: color });
+      if (!HL.demo) HL.setSettings({ defaultColor: color }); // the guide's practice saves nothing
     }
   }
 
@@ -315,6 +315,9 @@
     if (active && (active.matches('input, textarea, select') || active.isContentEditable)) return null;
     const range = sel.getRangeAt(0);
     if (!range.toString().trim()) return null;
+    // The guide only allows highlighting in its practice article.
+    const root = HL.demoRoot && HL.demoRoot();
+    if (root && !root.contains(range.commonAncestorContainer)) return null;
     return range;
   }
 

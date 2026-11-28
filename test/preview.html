@@ -2,6 +2,7 @@
 <html lang="en">
   <head>
     <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
     <title>Extension preview</title>
     <style>
       #site { position: fixed; top: 0; height: 100vh; border: 0; }
@@ -10,8 +11,9 @@
   <body>
     <!-- Development only. Renders the popup or the library next to a page running the
          content scripts through test/chrome-stub.js. Parameters:
-           ui=popup|panel|tab   what to show: the toolbar popup (default), the library in
-                                the side panel, or the library as a full tab
+           ui=popup|panel|tab|guide   what to show: the toolbar popup (default), the library
+                                in the side panel, the library as a full tab, or the guide
+                                (use page=none with tab and guide)
            page=<path>|none     page beside it (default test-page.html?stub; the page
                                 needs ?stub); "none" shows the UI alone at full width
            side=right           put the UI on the right, where Chrome's side panel is
@@ -92,7 +94,8 @@
           window.__hlTabSend = (msg) => frame.contentWindow.__hlSend(msg);
         }
 
-        const pageUrl = new URL(ui === 'popup' ? '../popup/popup.html' : '../library/library.html', location.href);
+        const UI_PAGES = { popup: '../popup/popup.html', guide: '../guide/guide.html' };
+        const pageUrl = new URL(UI_PAGES[ui] || '../library/library.html', location.href);
         // Cache-buster so edited files are always picked up.
         const fresh = (href) => {
           const url = new URL(href, pageUrl);
@@ -146,7 +149,7 @@
         }
 
         // Library starting state.
-        if (ui !== 'popup') {
+        if (ui === 'panel' || ui === 'tab') {
           await new Promise((resolve) => setTimeout(resolve, 300));
           const view = params.get('view');
           if (view) document.querySelector(`.views [data-view="${view}"]`).click();

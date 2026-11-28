@@ -9,7 +9,7 @@ $ErrorActionPreference = 'Stop'
 Add-Type -AssemblyName System.IO.Compression, System.IO.Compression.FileSystem
 
 $root = Split-Path $PSScriptRoot -Parent
-$include = @('manifest.json', 'background.js', 'shared', 'content', 'popup', 'library', 'icons')
+$include = @('manifest.json', 'background.js', 'shared', 'content', 'popup', 'library', 'guide', 'icons')
 $manifestText = [System.IO.File]::ReadAllText((Join-Path $root 'manifest.json'))
 $manifest = $manifestText | ConvertFrom-Json
 
@@ -31,7 +31,7 @@ foreach ($item in $include) {
 }
 
 # Every file the manifest points at must be in the zip.
-$referenced = @($manifest.background.service_worker, $manifest.action.default_popup, $manifest.side_panel.default_path)
+$referenced = @($manifest.background.service_worker, $manifest.action.default_popup, $manifest.side_panel.default_path, $manifest.options_ui.page)
 $referenced += $manifest.icons.PSObject.Properties.Value
 $referenced += $manifest.action.default_icon.PSObject.Properties.Value
 foreach ($script in $manifest.content_scripts) { $referenced += $script.js + $script.css }

@@ -1472,6 +1472,7 @@
       if (b.dataset.command === 'export-md') exportMarkdown();
       else if (b.dataset.command === 'export-json') exportBackup();
       else if (b.dataset.command === 'import') $('importFile').click();
+      else if (b.dataset.command === 'guide') chrome.tabs.create({ url: chrome.runtime.getURL('guide/guide.html') });
     });
     $('importFile').addEventListener('change', (e) => {
       const file = e.target.files[0];

@@ -1,0 +1,281 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Highlight guide</title>
+    <link rel="icon" href="../icons/icon32.png" />
+    <link rel="stylesheet" href="../shared/theme.css" />
+    <link rel="stylesheet" href="../content/highlight.css" />
+    <link rel="stylesheet" href="guide.css" />
+  </head>
+  <body>
+    <!-- What Highlight does and how to use it. Opens on first install, from the popup's
+         "?" button, the library's menu, and "Options" on the toolbar icon's menu. -->
+    <header class="topbar">
+      <div class="topbar-inner">
+        <a class="brand" href="#overview">
+          <img src="../icons/icon32.png" alt="" width="26" height="26" />
+          <span>Highlight</span>
+        </a>
+        <nav class="nav" aria-label="Sections">
+          <a href="#try">Try it</a>
+          <a href="#features">Features</a>
+          <a href="#shortcuts">Shortcuts</a>
+          <a href="#privacy">Privacy</a>
+          <a href="#whats-new">What's new</a>
+          <a href="#faq">Questions</a>
+        </nav>
+        <button id="openLibrary" type="button" class="btn small">Open your library</button>
+      </div>
+    </header>
+
+    <main>
+      <!-- Hero -->
+      <section id="overview" class="hero">
+        <div class="hero-text reveal">
+          <p id="welcome" class="eyebrow" hidden>Welcome! Highlight is installed.</p>
+          <h1>Read the web the way you read a <mark class="brush">good book</mark>.</h1>
+          <p class="lede">
+            Highlight what matters, write notes in the margin, keep your place, and come back to what you didn't
+            understand yet. Everything is saved on your computer and comes back when you return to a page.
+          </p>
+          <div class="hero-actions">
+            <a class="btn primary" href="#try">Try it right here</a>
+            <button id="openLibraryHero" type="button" class="btn">Open your library</button>
+          </div>
+        </div>
+        <div class="hero-art reveal" aria-hidden="true">
+          <div class="art-page">
+            <span class="art-line"></span>
+            <span class="art-line"><span class="art-mark yellow">a sentence that changed your mind</span></span>
+            <span class="art-line short"></span>
+            <span class="art-line"><span class="art-mark green">worth finding again</span><span class="art-q">?</span></span>
+            <span class="art-line"></span>
+            <span class="art-line"><span class="art-chip">Resume</span><span class="art-under">left off here</span></span>
+            <span class="art-line short"></span>
+          </div>
+          <div class="art-toolbar">
+            <span class="sw" style="background: #fff176"></span><span class="sw" style="background: #b9f6ca"></span><span class="sw" style="background: #b3e5fc"></span><span class="sw" style="background: #f8bbd0"></span><span class="sw" style="background: #ffcc80"></span>
+            <span class="art-sep"></span><span class="art-ic"></span><span class="art-ic"></span><span class="art-ic"></span>
+          </div>
+          <div class="art-note">
+            <span class="art-note-title">Add a note</span>
+            <span class="art-note-body">Opening line for my talk</span>
+          </div>
+        </div>
+      </section>
+
+      <!-- Your reading (live counts), or how to start -->
+      <section id="you" class="you reveal" aria-live="polite">
+        <div id="stats" class="stats" hidden>
+          <div class="stat"><strong id="statHighlights">0</strong><span>Highlights</span></div>
+          <div class="stat"><strong id="statPages">0</strong><span>Pages</span></div>
+          <div class="stat"><strong id="statNotes">0</strong><span>Notes</span></div>
+          <div class="stat learn"><strong id="statLearn">0</strong><span>To learn</span></div>
+          <div class="stat learned"><strong id="statLearned">0</strong><span>Learned</span></div>
+        </div>
+        <ol id="start" class="start" hidden>
+          <li>
+            <span class="step">1</span>
+            <div><strong>Select text on any page</strong><p>A small toolbar appears next to it.</p></div>
+          </li>
+          <li>
+            <span class="step">2</span>
+            <div><strong>Pick a color</strong><p>Or add a note, bookmark the line, or mark it to learn more.</p></div>
+          </li>
+          <li>
+            <span class="step">3</span>
+            <div><strong>Come back any time</strong><p>Your highlights return, and the library keeps them all.</p></div>
+          </li>
+        </ol>
+      </section>
+
+      <!-- Try it -->
+      <section id="try" class="section">
+        <div class="section-head reveal">
+          <p class="kicker">Try it</p>
+          <h2>Give it a go, right on this page</h2>
+          <p>This is a practice area: nothing you do here is saved or added to your library.</p>
+        </div>
+        <div class="try reveal">
+          <div class="try-tips">
+            <div class="tip"><span class="tip-n">1</span><span><strong>Select</strong> a sentence below, then pick a color.</span></div>
+            <div class="tip"><span class="tip-n">2</span><span><strong>Click</strong> your highlight to add a note or change its color.</span></div>
+            <div class="tip"><span class="tip-n">3</span><span>Try the <strong>bookmark</strong> and <strong>learn more</strong> buttons too.</span></div>
+            <button id="resetDemo" type="button" class="btn small">Clear the practice area</button>
+          </div>
+          <article id="demo" class="demo">
+            <p class="demo-kicker">Practice article</p>
+            <h3>The habit of the margin</h3>
+            <p>
+              For centuries, readers kept a pencil nearby. They underlined the lines that surprised them and wrote
+              small notes for their future selves in the margins.
+            </p>
+            <p>
+              Marking a sentence is a tiny decision: this matters. That decision is what makes an idea easier to
+              find, and easier to remember, a week later.
+            </p>
+            <p>
+              Some passages raise a question instead of answering one. Mark those too, so you can come back and learn
+              more when you have time.
+            </p>
+          </article>
+        </div>
+      </section>
+
+      <!-- Features -->
+      <section id="features" class="section">
+        <div class="section-head reveal">
+          <p class="kicker">Features</p>
+          <h2>Everything you need to read with intent</h2>
+        </div>
+        <div class="bento">
+          <article class="card wide reveal">
+            <div class="card-art colors" aria-hidden="true">
+              <span style="background: #fff176"></span><span style="background: #b9f6ca"></span><span style="background: #b3e5fc"></span><span style="background: #f8bbd0"></span><span style="background: #ffcc80"></span><span class="custom" style="background: #c4b5fd"></span><span class="add">+</span>
+            </div>
+            <h3>Highlight in any color</h3>
+            <p>Select text and pick one of five colors, or add up to five of your own by color code. Use colors to tell ideas, quotes and to-dos apart.</p>
+          </article>
+          <article class="card reveal">
+            <div class="card-art note" aria-hidden="true">
+              <span class="note-line"><mark>The habit of the margin</mark></span>
+              <span class="note-box">Compare with old books</span>
+            </div>
+            <h3>Notes</h3>
+            <p>Write your thoughts next to the text. Hover a highlight to read its note again.</p>
+          </article>
+          <article class="card reveal">
+            <div class="card-art bookmark" aria-hidden="true">
+              <span class="chip">Resume</span>
+              <span class="jump">Continue reading →</span>
+            </div>
+            <h3>Bookmark your place</h3>
+            <p>One bookmark per page. Click Continue reading in the toolbar icon to jump back to it.</p>
+          </article>
+          <article class="card reveal">
+            <div class="card-art learn" aria-hidden="true">
+              <span class="q"><b>?</b> How does this work?</span>
+              <span class="bar"><span></span></span>
+            </div>
+            <h3>Learn more later</h3>
+            <p>Mark what you don't understand yet with a question. Click Got it once you do, and watch your progress.</p>
+          </article>
+          <article class="card reveal">
+            <div class="card-art library" aria-hidden="true">
+              <span class="search">Search notes, titles, sites</span>
+              <span class="rows"><i></i><i></i><i></i></span>
+            </div>
+            <h3>One library</h3>
+            <p>Every highlight in the side panel or a tab. Search, filter by color, browse by page or by day.</p>
+          </article>
+          <article class="card wide reveal">
+            <div class="card-art backup" aria-hidden="true">
+              <span class="file">highlights.md</span>
+              <span class="file">backup.json</span>
+              <span class="arrow">⇄</span>
+              <span class="file">New computer</span>
+            </div>
+            <h3>Export, back up and move</h3>
+            <p>Export Markdown for Obsidian, Notion or an email. Save everything to one backup file and import it anywhere; nothing is duplicated.</p>
+          </article>
+          <article class="card reveal">
+            <div class="card-art secure" aria-hidden="true">
+              <span class="lock"></span>
+            </div>
+            <h3>Private by design</h3>
+            <p>Stored on your computer. No account, no servers, no tracking.</p>
+          </article>
+        </div>
+      </section>
+
+      <!-- Shortcuts -->
+      <section id="shortcuts" class="section">
+        <div class="section-head reveal">
+          <p class="kicker">Shortcuts</p>
+          <h2>Faster with the keyboard</h2>
+        </div>
+        <div class="shortcuts reveal">
+          <ul id="shortcutList" class="shortcut-list"></ul>
+          <button id="changeShortcuts" type="button" class="btn small">Change shortcuts</button>
+        </div>
+      </section>
+
+      <!-- Privacy -->
+      <section id="privacy" class="section">
+        <div class="privacy reveal">
+          <div class="privacy-icon" aria-hidden="true"></div>
+          <div>
+            <p class="kicker">Privacy</p>
+            <h2>Your reading stays yours</h2>
+            <p>
+              Highlights, notes and questions are kept in Chrome's storage on your computer. Highlight has no servers
+              and sends nothing anywhere: no account, no analytics, no ads.
+            </p>
+            <a id="privacyLink" class="link" href="https://preveengit.github.io/Highlight-and-Notes-Chrome-Extension/privacy-policy.html" target="_blank" rel="noopener">Read the privacy policy</a>
+          </div>
+        </div>
+      </section>
+
+      <!-- What's new -->
+      <section id="whats-new" class="section">
+        <div class="section-head reveal">
+          <p class="kicker">What's new</p>
+          <h2>Recent updates</h2>
+        </div>
+        <ol id="changes" class="changes reveal"></ol>
+      </section>
+
+      <!-- Questions -->
+      <section id="faq" class="section">
+        <div class="section-head reveal">
+          <p class="kicker">Questions</p>
+          <h2>Good to know</h2>
+        </div>
+        <div class="faq reveal">
+          <details>
+            <summary>Why doesn't the toolbar appear on some pages?</summary>
+            <p>Chrome doesn't let extensions run on chrome:// pages, the Chrome Web Store or the built-in PDF viewer. If you just installed Highlight, reload pages that were already open.</p>
+          </details>
+          <details>
+            <summary>How do I move my highlights to another computer?</summary>
+            <p>In the library, open the ⋮ menu and choose Export backup. On the other computer, choose Import backup and pick that file. Highlights you already have aren't duplicated.</p>
+          </details>
+          <details>
+            <summary>What happens if a page changes?</summary>
+            <p>Highlight remembers the words around each highlight, so it usually finds it again even when the page has changed a little. If it can't, the library shows it as "not found on the page right now".</p>
+          </details>
+          <details>
+            <summary>How do I remove a highlight?</summary>
+            <p>Click it on the page and choose the bin icon, or hover it in the library or the toolbar popup and delete it there. Deleting from the library can be undone.</p>
+          </details>
+          <details>
+            <summary>Can I turn off the toolbar that appears when I select text?</summary>
+            <p>Yes. Click the toolbar icon, open Settings (the gear) and switch off "Show toolbar when selecting text". You can still highlight with the keyboard shortcut.</p>
+          </details>
+        </div>
+      </section>
+    </main>
+
+    <footer class="footer">
+      <img src="../icons/icon32.png" alt="" width="20" height="20" />
+      <span>Highlight <span id="version"></span></span>
+      <span class="dot-sep">·</span>
+      <a class="link" href="https://preveengit.github.io/Highlight-and-Notes-Chrome-Extension/privacy-policy.html" target="_blank" rel="noopener">Privacy policy</a>
+      <span class="dot-sep">·</span>
+      <a class="link" href="https://github.com/PreveenGit/Highlight-and-Notes-Chrome-Extension/issues" target="_blank" rel="noopener">Report a problem</a>
+    </footer>
+
+    <script src="../shared/common.js"></script>
+    <script src="../library/data.js"></script>
+    <script src="guide.js"></script>
+    <!-- The real highlighter, for the practice area (guide.js turns on demo mode first). -->
+    <script src="../content/guard.js"></script>
+    <script src="../content/anchor.js"></script>
+    <script src="../content/marker.js"></script>
+    <script src="../content/store.js"></script>
+    <script src="../content/toolbar.js"></script>
+    <script src="../content/main.js"></script>
+  </body>
+</html>

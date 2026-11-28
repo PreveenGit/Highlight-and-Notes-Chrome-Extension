@@ -136,6 +136,13 @@ h1 {
   background: var(--hover);
 }
 
+.menu-sep {
+  height: 1px;
+  margin: 6px 4px;
+  border: 0;
+  background: var(--line);
+}
+
 /* Segmented view switcher. */
 .views {
   display: flex;

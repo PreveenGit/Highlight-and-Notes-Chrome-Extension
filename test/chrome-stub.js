@@ -77,8 +77,19 @@
   chrome.runtime = {
     ...(chrome.runtime || {}),
     onMessage: { addListener: (fn) => messageListeners.push(fn) },
-    getURL: (path) => new URL(path.replace(/^\//, ''), extensionRoot).href
+    getURL: (path) => new URL(path.replace(/^\//, ''), extensionRoot).href,
+    // Synchronous like the real one; reads manifest.json once (test pages only).
+    getManifest: () => {
+      if (!getManifest.cache) {
+        const xhr = new XMLHttpRequest();
+        xhr.open('GET', new URL('manifest.json', extensionRoot).href, false);
+        xhr.send();
+        getManifest.cache = JSON.parse(xhr.responseText);
+      }
+      return getManifest.cache;
+    }
   };
+  function getManifest() {}
   chrome.tabs = {
     query: async () => [{ id: 1, windowId: 1 }],
     // test/preview.html sets __hlTabSend to reach the test page in its iframe.

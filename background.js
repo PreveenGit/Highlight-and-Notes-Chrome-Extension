@@ -3,9 +3,12 @@ importScripts('shared/common.js');
 
 const OPEN_SIDE_PANEL = 'open-side-panel'; // command name in manifest.json
 
-// 1.8 gave Learn more its own question; earlier versions saved it as the note.
-chrome.runtime.onInstalled.addListener(() => {
+chrome.runtime.onInstalled.addListener(({ reason }) => {
+  // 1.8 gave Learn more its own question; earlier versions saved it as the note.
   HL.migrateLearnQuestions().catch((err) => console.warn('[Highlight] migration failed:', err));
+  // A first install opens the guide as a welcome. Updates don't open anything: the
+  // popup's "?" shows a "New" dot instead.
+  if (reason === 'install') chrome.tabs.create({ url: chrome.runtime.getURL('guide/guide.html#welcome') });
 });
 
 chrome.commands.onCommand.addListener((command, tab) => {
