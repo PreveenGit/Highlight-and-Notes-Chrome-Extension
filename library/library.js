@@ -15,7 +15,9 @@
     palette:
       'M12 3a9 9 0 0 0 0 18c.83 0 1.5-.67 1.5-1.5 0-.39-.15-.74-.39-1.01-.23-.26-.38-.61-.38-.99 0-.83.67-1.5 1.5-1.5H16c2.76 0 5-2.24 5-5 0-4.42-4.03-8-9-8zm-5.5 9a1.5 1.5 0 1 1 0-3 1.5 1.5 0 0 1 0 3zm3-4a1.5 1.5 0 1 1 0-3 1.5 1.5 0 0 1 0 3zm5 0a1.5 1.5 0 1 1 0-3 1.5 1.5 0 0 1 0 3zm3 4a1.5 1.5 0 1 1 0-3 1.5 1.5 0 0 1 0 3z',
     copy: 'M16 1H4c-1.1 0-2 .9-2 2v14h2V3h12V1zm3 4H8c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h11c1.1 0 2-.9 2-2V7c0-1.1-.9-2-2-2zm0 16H8V7h11v14z',
-    delete: 'M6 19c0 1.1.9 2 2 2h8c1.1 0 2-.9 2-2V7H6v12zM19 4h-3.5l-1-1h-5l-1 1H5v2h14V4z'
+    delete: 'M6 19c0 1.1.9 2 2 2h8c1.1 0 2-.9 2-2V7H6v12zM19 4h-3.5l-1-1h-5l-1 1H5v2h14V4z',
+    highlighter:
+      'M22 24H2v-4h20v4zM13.06 5.19l3.75 3.75L7.75 18H4v-3.75l9.06-9.06zm4.82 2.68-3.75-3.75 1.83-1.83a.996.996 0 0 1 1.41 0l2.34 2.34c.39.39.39 1.02 0 1.41l-1.83 1.83z'
   };
 
   // getCurrent() returns nothing in the side panel.
@@ -295,11 +297,17 @@
     const text = el('p', 'text');
     appendWithHits(text, String(h.text || ''), terms);
     main.append(text);
+
+    // The note is its own button: clicking it edits it.
+    let noteEl = null;
     if (note && !editing) {
-      const noteEl = el('p', 'user-note');
+      noteEl = el('button', 'user-note');
+      noteEl.type = 'button';
+      noteEl.dataset.action = 'note';
+      noteEl.title = 'Edit note';
       appendWithHits(noteEl, note, terms);
-      main.append(noteEl);
     }
+
     const meta = el('span', 'meta');
     if (h.bookmark) {
       const tag = el('span', 'bookmark-tag');
@@ -320,23 +328,32 @@
         .filter(Boolean)
         .join(' · ')
     );
-    main.append(meta);
-
-    // The editor sits outside .item-main, which is itself a button.
+    // The note, the editor and the quick actions sit outside .item-main, which is
+    // itself a button.
     const body = el('div', 'item-body');
     body.append(main);
-    if (editing) body.append(noteEditor());
+    if (noteEl) body.append(noteEl);
+    // The meta line and the quick actions share a row when there's room.
+    const foot = el('div', 'item-foot');
+    foot.append(meta);
+    body.append(foot);
+    if (editing) {
+      body.append(noteEditor());
+    } else {
+      // Always visible, so notes and Learn more are easy to find.
+      const quick = el('div', 'quick');
+      if (!note) quick.append(pillButton('note', 'Add note', 'note'));
+      quick.append(
+        h.learn
+          ? pillButton('check', 'Got it', 'learn', 'Got it: clear Learn more')
+          : pillButton('learn', 'Learn more', 'learn', 'Mark to learn more and write what to look into')
+      );
+      quick.lastChild.classList.add('learn', ...(h.learn ? ['on'] : []));
+      foot.append(quick);
+    }
 
     const actions = el('div', 'item-actions');
-    const noteButton = iconButton('note', note ? 'Edit note' : 'Add note', 'note');
-    noteButton.classList.toggle('on', !!note);
-    const learnButton = h.learn
-      ? iconButton('check', 'Got it: clear Learn more', 'learn')
-      : iconButton('learn', 'Mark to learn more', 'learn');
-    learnButton.classList.toggle('on', !!h.learn);
     actions.append(
-      noteButton,
-      learnButton,
       ...(h.bookmark ? [] : [iconButton('palette', 'Change color', 'pick')]), // bookmarks have no color
       iconButton('copy', 'Copy text', 'copy'),
       iconButton('delete', h.bookmark ? 'Delete bookmark' : 'Delete highlight', 'delete')
@@ -381,6 +398,19 @@
     row.append(hint, cancel, save);
     box.append(area, row);
     return box;
+  }
+
+  // A small labeled button with an icon, for the quick actions under a highlight.
+  function pillButton(icon, label, action, title = label) {
+    const b = el('button', 'pill');
+    b.type = 'button';
+    b.title = title;
+    b.dataset.action = action;
+    b.innerHTML = `<svg viewBox="0 0 24 24" aria-hidden="true"><path d="${ICONS[icon]}"/></svg>`;
+    const span = el('span');
+    span.textContent = label;
+    b.append(span);
+    return b;
   }
 
   function textButton(label, action) {
@@ -465,9 +495,13 @@
   }
 
   function empty(message) {
-    const p = el('p', 'empty');
+    const box = el('div', 'empty');
+    const icon = el('span', 'empty-icon');
+    icon.innerHTML = `<svg viewBox="0 0 24 24" aria-hidden="true"><path d="${ICONS.highlighter}"/></svg>`;
+    const p = el('p');
     p.textContent = message;
-    return p;
+    box.append(icon, p);
+    return box;
   }
 
   function el(tag, className) {

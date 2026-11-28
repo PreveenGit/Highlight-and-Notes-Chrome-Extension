@@ -36,7 +36,7 @@ Find the important parts again in seconds, instead of rereading the whole page.
 ADD NOTES
 Remember why a passage mattered: your own thoughts stay right next to the text.
 • Add a note to any highlight, right on the page. A small badge marks highlights with notes; hover to read the note.
-• Edit notes on the page or in the library. Search finds words in your notes, and exports include them.
+• Add or edit notes on the page or right in the library. Search finds words in your notes, and exports include them.
 
 BOOKMARK YOUR PLACE
 Stop hunting for where you left off in long articles, docs and tutorials.
@@ -45,7 +45,7 @@ Stop hunting for where you left off in long articles, docs and tutorials.
 
 LEARN MORE LATER
 Turn the parts you don't understand yet into a study list, instead of forgetting them.
-• Click the Learn more button (graduation cap) on a passage and write down your question.
+• Click the Learn more button (graduation cap) on a passage, on the page or in the library, and write down your question.
 • A "?" badge marks the passage on the page, and the To learn tab in the library collects these passages from every page.
 • Click Got it once you understand. The highlight and your question stay.
 
