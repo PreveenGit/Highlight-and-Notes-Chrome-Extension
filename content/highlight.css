@@ -18,29 +18,68 @@ mark.hl-mark:hover {
   filter: brightness(0.94);
 }
 
-/* A bookmark (set by marker.js): no fill and the page's own text color, an underline
-   so the line stands out, and a ribbon at its start. CSS only, like the note badge. */
+/* A bookmark (set by marker.js): the page's own text color on a soft blue tint with an
+   underline, and a "Resume" chip at its start. CSS only, like the note badge: the
+   chip is generated content, so it isn't page text and copying leaves it out. */
 mark.hl-mark.hl-bookmark {
   color: inherit !important;
-  background-color: transparent !important;
-  box-shadow: inset 0 -2px 0 #1a73e8 !important;
-  border-radius: 0 !important;
+  background-color: rgba(26, 115, 232, 0.12) !important;
+  box-shadow: inset 0 -2px 0 rgba(26, 115, 232, 0.8) !important;
+  border-radius: 4px !important;
 }
 
 mark.hl-mark.hl-bookmark:hover {
   filter: none;
-  background-color: rgba(26, 115, 232, 0.12) !important;
+  background-color: rgba(26, 115, 232, 0.2) !important;
 }
 
+/* The chip: a ribbon icon and a label. The icon is drawn with gradients (a white
+   rectangle with a V notch cut out of its bottom), since a page's CSP could block
+   an image. */
 mark.hl-mark.hl-bookmark-start::before {
-  content: '' !important;
+  content: 'Resume' !important;
   display: inline-block !important;
-  width: 9px !important;
-  height: 13px !important;
-  margin: 0 4px 0 1px !important;
-  vertical-align: -1px !important;
-  background: #1a73e8 !important;
-  clip-path: polygon(0 0, 100% 0, 100% 100%, 50% 72%, 0 100%) !important;
+  margin: 0 5px 0 1px !important;
+  padding: 0 8px 0 19px !important;
+  border-radius: 999px !important;
+  background:
+    linear-gradient(to bottom right, transparent 50%, #1a73e8 50%) 8px 9px / 3.5px 3px no-repeat,
+    linear-gradient(to bottom left, transparent 50%, #1a73e8 50%) 11.5px 9px / 3.5px 3px no-repeat,
+    linear-gradient(#fff, #fff) 8px 3px / 7px 9px no-repeat,
+    #1a73e8 !important;
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.18) !important;
+  color: #fff !important;
+  font: 600 11px/16px system-ui, -apple-system, 'Segoe UI', sans-serif !important;
+  font-style: normal !important;
+  letter-spacing: 0.01em !important;
+  text-decoration: none !important;
+  text-indent: 0 !important;
+  text-transform: none !important;
+  vertical-align: 0.12em !important;
+  white-space: nowrap !important;
+}
+
+/* Arriving at the bookmark (marker.js flash): a soft blue glow, and the chip says
+   where you are. The glow is an outline because the bookmark's background and
+   box-shadow are !important, which animations can't override. */
+mark.hl-mark.hl-bookmark.hl-bookmark-arrived {
+  animation: hl-bookmark-glow 1.2s ease-in-out 3;
+}
+
+mark.hl-mark.hl-bookmark-start.hl-bookmark-arrived::before {
+  content: 'You left off here' !important;
+}
+
+@keyframes hl-bookmark-glow {
+  0%,
+  100% {
+    outline: 3px solid rgba(26, 115, 232, 0);
+    outline-offset: 2px;
+  }
+  50% {
+    outline: 3px solid rgba(26, 115, 232, 0.45);
+    outline-offset: 2px;
+  }
 }
 
 /* A highlight with a note: a small badge after its last piece (set by marker.js).

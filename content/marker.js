@@ -9,6 +9,8 @@
   const BOOKMARK_CLASS = 'hl-bookmark';
   const BOOKMARK_START_CLASS = 'hl-bookmark-start';
   const LEARN_CLASS = 'hl-learn-badge';
+  const ARRIVED_CLASS = 'hl-bookmark-arrived';
+  const flashTimers = new Map(); // id -> timer that ends its flash
   const SKIP_SELECTOR = 'script, style, noscript, template, textarea, input, select, option';
 
   function selector(id) {
@@ -112,14 +114,15 @@
     getMarks(id).forEach((mark) => paint(mark, color));
   }
 
-  // Shows a highlight as a bookmark: no fill color, an underline, and a ribbon
-  // (CSS ::before) at the start of its first mark.
+  // Shows a highlight as a bookmark: a soft tint instead of its color, an underline,
+  // and a "Resume" chip (CSS ::before) at the start of its first mark. The inline
+  // color comes off so the stylesheet's tint and hover apply.
   function setBookmark(id) {
     const marks = getMarks(id);
     marks.forEach((mark, i) => {
       mark.classList.add(BOOKMARK_CLASS);
       mark.classList.toggle(BOOKMARK_START_CLASS, i === 0);
-      mark.style.setProperty('background-color', 'transparent', 'important');
+      mark.style.removeProperty('background-color');
     });
   }
 
@@ -142,17 +145,27 @@
     });
   }
 
-  // Scrolls the highlight into view and pulses it. Returns false if it isn't on the page.
+  // Scrolls the highlight into view and pulses it. A bookmark glows instead, and its
+  // chip says "You left off here" for a moment. Returns false if it isn't on the page.
   function flash(id) {
     const marks = getMarks(id);
     if (!marks.length) return false;
     marks[0].scrollIntoView({ behavior: 'smooth', block: 'center' });
+    const bookmark = marks[0].classList.contains(BOOKMARK_CLASS);
+    const cls = bookmark ? ARRIVED_CLASS : FLASH_CLASS;
     for (const mark of marks) {
-      mark.classList.remove(FLASH_CLASS);
+      mark.classList.remove(cls);
       void mark.offsetWidth; // restart the animation
-      mark.classList.add(FLASH_CLASS);
+      mark.classList.add(cls);
     }
-    setTimeout(() => marks.forEach((mark) => mark.classList.remove(FLASH_CLASS)), 2000);
+    clearTimeout(flashTimers.get(id));
+    flashTimers.set(
+      id,
+      setTimeout(() => {
+        flashTimers.delete(id);
+        marks.forEach((mark) => mark.classList.remove(cls));
+      }, bookmark ? 4000 : 2000)
+    );
     return true;
   }
 

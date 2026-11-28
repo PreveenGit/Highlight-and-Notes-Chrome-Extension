@@ -179,16 +179,32 @@
         eq(marks.some((m) => m.hasAttribute('title') || m.classList.contains('hl-note-badge')), false, 'cleared');
       });
 
-      test('setBookmark clears the fill and puts the ribbon on the first mark only', () => {
+      test('setBookmark drops the color fill and puts the chip on the first mark only', () => {
         const before = setup(CROSS).text;
         marker.wrapRange(rangeOver('lo', 'Sec'), 'b', 'yellow');
         marker.setBookmark('b');
         const marks = marker.getMarks('b');
         eq(marks.every((m) => m.classList.contains('hl-bookmark')), true, 'bookmark class on every mark');
-        eq(marks.every((m) => m.style.getPropertyValue('background-color') === 'transparent'), true, 'no fill');
-        eq(marks.filter((m) => m.classList.contains('hl-bookmark-start')).length, 1, 'one ribbon');
-        eq(marks[0].classList.contains('hl-bookmark-start'), true, 'ribbon on first mark');
+        eq(marks.every((m) => m.style.getPropertyValue('background-color') === ''), true, 'no inline fill (the stylesheet tints it)');
+        eq(marks.filter((m) => m.classList.contains('hl-bookmark-start')).length, 1, 'one chip');
+        eq(marks[0].classList.contains('hl-bookmark-start'), true, 'chip on first mark');
         eq(anchor.buildIndex(fixture).text, before, 'page text unchanged');
+      });
+
+      test('flash greets a bookmark with the arrival glow, other highlights with the flash', () => {
+        const before = setup(CROSS).text;
+        marker.wrapRange(rangeOver('lo', 'Sec'), 'b', 'yellow');
+        marker.setBookmark('b');
+        eq(marker.flash('b'), true, 'found');
+        const marks = marker.getMarks('b');
+        eq(marks.every((m) => m.classList.contains('hl-bookmark-arrived')), true, 'arrival class on every mark');
+        eq(marks.some((m) => m.classList.contains('hl-flash')), false, 'no orange flash');
+        eq(anchor.buildIndex(fixture).text, before, 'page text unchanged');
+        marker.unwrap('b');
+        marker.wrapRange(rangeOver('lo', 'Sec'), 'h', 'yellow');
+        marker.flash('h');
+        eq(marker.getMarks('h').every((m) => m.classList.contains('hl-flash')), true, 'plain highlight flashes');
+        eq(marker.flash('missing'), false, 'missing id');
       });
 
       test('setLearn puts the "?" badge on the last mark only, and clears it', () => {

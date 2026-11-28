@@ -65,21 +65,22 @@ section p {
   margin: 4px 0;
 }
 
+/* "Continue reading": the page's bookmark as a card. */
 .jump {
   display: flex;
   align-items: center;
-  justify-content: center;
-  gap: 6px;
+  gap: 10px;
   width: 100%;
-  margin: 0 0 8px;
-  padding: 7px 10px;
-  border: 0;
-  border-radius: 6px;
-  background: var(--accent);
-  color: var(--bg);
+  margin: 0 0 10px;
+  padding: 10px 12px 10px 10px;
+  border: 1px solid color-mix(in srgb, var(--accent) 35%, var(--line));
+  border-radius: 10px;
+  background: color-mix(in srgb, var(--accent) 7%, var(--bg));
+  color: var(--fg);
   font: inherit;
-  font-weight: 600;
+  text-align: left;
   cursor: pointer;
+  transition: border-color 0.15s, background-color 0.15s;
 }
 
 .jump[hidden] {
@@ -87,18 +88,73 @@ section p {
 }
 
 .jump:hover:not(:disabled) {
-  filter: brightness(1.08);
+  border-color: var(--accent);
+  background: color-mix(in srgb, var(--accent) 11%, var(--bg));
 }
 
 .jump:disabled {
-  opacity: 0.5;
+  opacity: 0.55;
   cursor: default;
 }
 
-.jump svg {
-  width: 16px;
-  height: 16px;
+.jump-icon {
+  flex: none;
+  display: grid;
+  place-items: center;
+  width: 34px;
+  height: 34px;
+  border-radius: 10px;
+  background: color-mix(in srgb, var(--accent) 16%, var(--bg));
+  color: var(--accent);
+}
+
+.jump-icon svg {
+  width: 18px;
+  height: 18px;
   fill: currentColor;
+}
+
+.jump-body {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 1px;
+}
+
+.jump-title {
+  color: var(--accent);
+  font-weight: 600;
+}
+
+.jump-text {
+  display: -webkit-box;
+  overflow: hidden;
+  font-size: 12px;
+  word-break: break-word;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+}
+
+.jump-when {
+  color: var(--muted);
+  font-size: 11px;
+}
+
+.jump-when:empty {
+  display: none;
+}
+
+.jump-arrow {
+  flex: none;
+  width: 18px;
+  height: 18px;
+  fill: var(--accent);
+  transition: transform 0.15s;
+}
+
+.jump:hover:not(:disabled) .jump-arrow {
+  transform: translateX(2px);
 }
 
 #list {

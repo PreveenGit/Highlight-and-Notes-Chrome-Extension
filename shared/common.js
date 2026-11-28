@@ -86,6 +86,27 @@
     return text ? { ...rest, note: text } : rest;
   };
 
+  // How long ago `time` (ms since epoch) was, like "2 days ago" or "yesterday";
+  // '' when there is no time. Used by the popup and the library.
+  const AGO_UNITS = [
+    ['year', 31536000],
+    ['month', 2592000],
+    ['week', 604800],
+    ['day', 86400],
+    ['hour', 3600],
+    ['minute', 60]
+  ];
+  let relativeFormat = null; // created on first use; content scripts never need it
+  HL.ago = function ago(time) {
+    if (!time) return '';
+    relativeFormat = relativeFormat || new Intl.RelativeTimeFormat(undefined, { numeric: 'auto' });
+    const seconds = (time - Date.now()) / 1000;
+    for (const [unit, size] of AGO_UNITS) {
+      if (Math.abs(seconds) >= size) return relativeFormat.format(Math.round(seconds / size), unit);
+    }
+    return 'just now';
+  };
+
   HL.getSettings = async function getSettings() {
     const data = await chrome.storage.local.get(HL.SETTINGS_KEY);
     return { ...HL.DEFAULT_SETTINGS, ...data[HL.SETTINGS_KEY] };

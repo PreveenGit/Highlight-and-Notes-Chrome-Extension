@@ -39,8 +39,8 @@ Remember why a passage mattered: your own thoughts stay right next to the text.
 
 BOOKMARK YOUR PLACE
 Stop hunting for where you left off in long articles, docs and tutorials.
-• Select a line and click the bookmark button. Each page keeps one bookmark.
-• When you come back, click the toolbar icon, then Jump to bookmark: the page scrolls straight to that line.
+• Select a line and click the bookmark button. A "Resume" tag marks the line, and each page keeps one bookmark.
+• When you come back, click the toolbar icon, then Continue reading: the page scrolls straight to that line and greets you with "You left off here".
 
 LEARN MORE LATER
 Turn the parts you don't understand yet into a study list, instead of forgetting them.
@@ -79,9 +79,9 @@ Works on most web pages. Chrome doesn't allow extensions on chrome:// pages, the
 
 | File | Shows |
 | --- | --- |
-| `store/screenshots/1-highlight.png` | An article with highlights, note badges, a "?" (learn more) and a bookmark ribbon; the toolbar over a selection shows the note, bookmark and learn-more buttons |
+| `store/screenshots/1-highlight.png` | An article with highlights, note badges, a "?" (learn more) and a bookmarked line with its "Resume" tag; the toolbar over a selection shows the note, bookmark and learn-more buttons |
 | `store/screenshots/2-side-panel.png` | The side panel listing the page's highlights with notes, a Learn more item and the bookmark |
-| `store/screenshots/3-bookmark.png` | The toolbar popup with Jump to bookmark |
+| `store/screenshots/3-bookmark.png` | The toolbar popup with the Continue reading card, next to the bookmarked line and its "Resume" tag |
 | `store/screenshots/4-to-learn.png` | The library's To learn tab: passages marked to learn more, with questions, from several sites |
 | `store/screenshots/5-backup.png` | The full-tab library with the Export Markdown / Export backup / Import backup menu open |
 
@@ -130,4 +130,4 @@ GitHub Pages publishes `docs/` from the `main` branch of `PreveenGit/Highlight-a
 
 ## Test instructions tab (optional)
 
-> No account or setup is needed. Open any article, select a sentence, and click a color in the toolbar that appears (or press Alt+Shift+H). Click the highlight to recolor or delete it. Reload the page: the highlight is restored. In the toolbar, the speech-bubble button adds a note, the bookmark button bookmarks the line (the toolbar icon's popup then shows Jump to bookmark), and the graduation-cap button marks a passage to learn more and asks for a question. Press Alt+Shift+L (or the side-panel button in the popup) to open the library; the To learn tab lists passages marked to learn more.
+> No account or setup is needed. Open any article, select a sentence, and click a color in the toolbar that appears (or press Alt+Shift+H). Click the highlight to recolor or delete it. Reload the page: the highlight is restored. In the toolbar, the speech-bubble button adds a note, the bookmark button bookmarks the line (the toolbar icon's popup then shows Continue reading), and the graduation-cap button marks a passage to learn more and asks for a question. Press Alt+Shift+L (or the side-panel button in the popup) to open the library; the To learn tab lists passages marked to learn more.

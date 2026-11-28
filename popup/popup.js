@@ -38,8 +38,13 @@
     const bookmark = highlights.find((h) => h.bookmark);
     $('jump').hidden = !bookmark;
     $('jump').disabled = !!bookmark && !bookmark.found;
-    $('jump').title = bookmark && !bookmark.found ? "The bookmarked line isn't on the page right now" : '';
+    $('jump').title = bookmark && !bookmark.found ? "The bookmarked line isn't on the page right now" : 'Scroll to your bookmark';
     $('jump').dataset.id = bookmark ? bookmark.id : '';
+    if (bookmark) {
+      $('jumpText').textContent = `“${bookmark.text}”`;
+      const when = HL.ago(bookmark.createdAt);
+      $('jumpWhen').textContent = !bookmark.found ? 'Not on the page right now' : when ? `Saved ${when}` : '';
+    }
 
     $('list').replaceChildren(
       ...highlights.map((h) => {

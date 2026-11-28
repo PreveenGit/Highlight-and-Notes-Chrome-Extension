@@ -297,6 +297,11 @@
       main.append(noteEl);
     }
     const meta = el('span', 'meta');
+    if (h.bookmark) {
+      const tag = el('span', 'bookmark-tag');
+      tag.textContent = 'Bookmark';
+      meta.append(tag);
+    }
     if (h.learn) {
       const tag = el('span', 'learn-tag');
       tag.textContent = 'Learn more';
@@ -304,7 +309,6 @@
     }
     meta.append(
       [
-        h.bookmark ? 'Bookmark' : '',
         showPage ? page.title : '',
         showPage ? page.site : '',
         orphan ? 'Not found on the page right now' : ago(h.createdAt)
@@ -455,22 +459,8 @@
     return node;
   }
 
-  const relative = new Intl.RelativeTimeFormat(undefined, { numeric: 'auto' });
-  const UNITS = [
-    ['year', 31536000],
-    ['month', 2592000],
-    ['week', 604800],
-    ['day', 86400],
-    ['hour', 3600],
-    ['minute', 60]
-  ];
   function ago(time) {
-    if (!time) return '';
-    const seconds = (time - Date.now()) / 1000;
-    for (const [unit, size] of UNITS) {
-      if (Math.abs(seconds) >= size) return relative.format(Math.round(seconds / size), unit);
-    }
-    return 'just now';
+    return HL.ago(time);
   }
 
   function plural(n) {
