@@ -38,7 +38,9 @@ foreach ($name in $shots.Keys) {
   $out = Join-Path $PSScriptRoot $name
   $profileDir = Join-Path ([IO.Path]::GetTempPath()) ('hl-screenshot-' + [guid]::NewGuid())
   $arguments = @(
-    '--headless=new', '--disable-gpu', '--hide-scrollbars', '--no-first-run',
+    # Reduced motion: the capture happens right after a resize re-shows the toolbar,
+    # before its fade-in animation could run.
+    '--headless=new', '--disable-gpu', '--hide-scrollbars', '--no-first-run', '--force-prefers-reduced-motion',
     '--force-device-scale-factor=1', '--window-size=1280,800', '--virtual-time-budget=15000',
     "--user-data-dir=`"$profileDir`"", "--screenshot=`"$out`"", "`"$BaseUrl/$($shots[$name])`""
   )

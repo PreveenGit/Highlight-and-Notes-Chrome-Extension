@@ -14,83 +14,135 @@
     delete: 'M6 19c0 1.1.9 2 2 2h8c1.1 0 2-.9 2-2V7H6v12zM19 4h-3.5l-1-1h-5l-1 1H5v2h14V4z'
   };
 
+  // A dark, frosted pill that reads well on light and dark pages. Icon buttons get
+  // a quick label on hover (data-tip), shown on the side away from the text.
   const CSS = `
     :host { all: initial; }
     .bar {
+      --shift: 6px;
       position: fixed;
       display: flex;
       align-items: center;
-      gap: 6px;
-      padding: 6px 8px;
-      background: #202124;
-      border-radius: 10px;
-      box-shadow: 0 4px 16px rgba(0, 0, 0, 0.35);
-      font: 12px/1 system-ui, sans-serif;
+      gap: 2px;
+      padding: 5px;
+      border: 1px solid rgba(255, 255, 255, 0.1);
+      border-radius: 999px;
+      background: rgba(28, 29, 32, 0.9);
+      -webkit-backdrop-filter: blur(14px) saturate(160%);
+      backdrop-filter: blur(14px) saturate(160%);
+      box-shadow: 0 12px 32px rgba(0, 0, 0, 0.28), 0 2px 6px rgba(0, 0, 0, 0.22);
+      color: #e8eaed;
+      font: 12px/1 system-ui, -apple-system, 'Segoe UI', sans-serif;
       user-select: none;
+      animation: hl-in 0.14s ease-out;
     }
+    .bar[data-side='below'] { --shift: -6px; }
     .bar[hidden] { display: none; }
+    @keyframes hl-in {
+      from { opacity: 0; transform: translateY(var(--shift)) scale(0.97); }
+    }
     .bar.note-mode {
       flex-direction: column;
       align-items: stretch;
-      padding: 8px;
+      gap: 8px;
+      padding: 10px;
+      border-radius: 16px;
     }
     button { all: unset; box-sizing: border-box; cursor: pointer; }
+    button:focus-visible { outline: 2px solid #8ab4f8; outline-offset: 2px; }
     .swatch {
       width: 20px;
       height: 20px;
+      margin: 0 3px;
       border-radius: 50%;
-      border: 2px solid rgba(255, 255, 255, 0.85);
-      transition: transform 0.1s;
+      box-shadow: inset 0 0 0 1px rgba(0, 0, 0, 0.18);
+      transition: transform 0.12s ease-out, box-shadow 0.12s;
     }
-    .swatch:hover { transform: scale(1.15); }
-    .swatch.active { box-shadow: 0 0 0 2px #202124, 0 0 0 4px #8ab4f8; }
-    .sep { width: 1px; height: 18px; background: #5f6368; }
+    .swatch:first-child { margin-left: 5px; }
+    .swatch:hover { transform: scale(1.18); }
+    .swatch:active { transform: scale(0.94); }
+    .swatch.active { box-shadow: inset 0 0 0 1px rgba(0, 0, 0, 0.18), 0 0 0 2px rgba(28, 29, 32, 0.9), 0 0 0 4px #fff; }
+    .sep { width: 1px; height: 20px; margin: 0 5px; background: rgba(255, 255, 255, 0.14); }
     .icon {
+      position: relative;
       display: grid;
       place-items: center;
-      width: 24px;
-      height: 24px;
-      border-radius: 6px;
+      width: 32px;
+      height: 32px;
+      border-radius: 50%;
       color: #e8eaed;
+      transition: background-color 0.12s, transform 0.12s ease-out;
     }
-    .icon:hover { background: #3c4043; }
+    .icon:hover { background: rgba(255, 255, 255, 0.12); }
+    .icon:active { transform: scale(0.9); }
     .icon.on { color: #fdd663; }
     .icon[data-action='bookmark'] { color: #8ab4f8; }
     .icon[data-action='learn'] { color: #d7aefb; }
-    .icon svg { width: 16px; height: 16px; fill: currentColor; }
+    .icon[data-action='delete']:hover { color: #f28b82; background: rgba(242, 139, 130, 0.14); }
+    .icon svg { width: 18px; height: 18px; fill: currentColor; }
+    .icon::after {
+      content: attr(data-tip);
+      position: absolute;
+      left: 50%;
+      bottom: calc(100% + 12px);
+      padding: 6px 9px;
+      border-radius: 7px;
+      background: #0f1012;
+      box-shadow: 0 4px 12px rgba(0, 0, 0, 0.25);
+      color: #fff;
+      font: 500 11px/1.2 system-ui, -apple-system, 'Segoe UI', sans-serif;
+      white-space: nowrap;
+      opacity: 0;
+      transform: translate(-50%, 3px);
+      transition: opacity 0.12s, transform 0.12s;
+      pointer-events: none;
+    }
+    .bar[data-side='below'] .icon::after { bottom: auto; top: calc(100% + 12px); transform: translate(-50%, -3px); }
+    .icon:last-child::after { left: auto; right: 0; transform: translateY(3px); }
+    .bar[data-side='below'] .icon:last-child::after { transform: translateY(-3px); }
+    .icon:hover::after,
+    .icon:focus-visible::after { opacity: 1; transform: translate(-50%, 0); transition-delay: 0.3s; }
+    .icon:last-child:hover::after,
+    .icon:last-child:focus-visible::after { transform: none; }
     textarea {
       all: unset;
       box-sizing: border-box;
       display: block;
-      width: 260px;
-      min-height: 72px;
+      width: 280px;
+      min-height: 80px;
       max-height: 220px;
-      padding: 6px 8px;
-      border-radius: 6px;
-      background: #303134;
+      padding: 9px 11px;
+      border: 1px solid rgba(255, 255, 255, 0.1);
+      border-radius: 10px;
+      background: rgba(255, 255, 255, 0.06);
       color: #e8eaed;
-      font: 13px/1.4 system-ui, sans-serif;
+      font: 13px/1.45 system-ui, -apple-system, 'Segoe UI', sans-serif;
       white-space: pre-wrap;
       overflow-wrap: break-word;
       overflow-y: auto;
       resize: vertical;
       cursor: text;
       user-select: text;
+      transition: border-color 0.12s, box-shadow 0.12s;
     }
     textarea::placeholder { color: #9aa0a6; }
-    textarea:focus { outline: 2px solid #8ab4f8; outline-offset: 0; }
+    textarea:focus { border-color: #8ab4f8; box-shadow: 0 0 0 3px rgba(138, 180, 248, 0.25); }
     .row { display: flex; align-items: center; gap: 6px; }
-    .hint { flex: 1; color: #9aa0a6; font-size: 11px; }
+    .hint { flex: 1; padding-left: 2px; color: #9aa0a6; font-size: 11px; }
     .text-btn {
-      padding: 5px 10px;
-      border-radius: 6px;
+      padding: 7px 14px;
+      border-radius: 999px;
       color: #e8eaed;
       font-weight: 600;
+      transition: background-color 0.12s, transform 0.12s ease-out;
     }
-    .text-btn:hover { background: #3c4043; }
-    .text-btn.primary { background: #8ab4f8; color: #202124; }
+    .text-btn:hover { background: rgba(255, 255, 255, 0.12); }
+    .text-btn:active { transform: scale(0.96); }
+    .text-btn.primary { background: #8ab4f8; color: #1c1d20; }
     .text-btn.primary:hover { background: #aecbfa; }
-    button:focus-visible { outline: 2px solid #8ab4f8; outline-offset: 2px; }
+    @media (prefers-reduced-motion: reduce) {
+      .bar, .swatch, .icon, .icon::after, .text-btn, textarea { animation: none; transition: none; }
+    }
   `;
 
   let host = null;
@@ -241,9 +293,13 @@
     return el;
   }
 
+  // The label shows as a quick tooltip (CSS, from data-tip) instead of the slow
+  // native one.
   function iconButton(action, label, icon = action) {
     const el = button(action, label);
     el.className = 'icon';
+    el.removeAttribute('title');
+    el.dataset.tip = label;
     const svg = document.createElementNS('http://www.w3.org/2000/svg', 'svg');
     svg.setAttribute('viewBox', '0 0 24 24');
     const path = document.createElementNS('http://www.w3.org/2000/svg', 'path');
@@ -265,8 +321,10 @@
     const gap = 8;
     const { width, height } = bar.getBoundingClientRect();
     let top = rect.top - height - gap;
-    if (top < 4) top = rect.bottom + gap;
+    const below = top < 4;
+    if (below) top = rect.bottom + gap;
     top = Math.max(4, Math.min(top, window.innerHeight - height - 4));
+    bar.dataset.side = below ? 'below' : 'above'; // tooltips go on the side away from the text
     let left = rect.left + rect.width / 2 - width / 2;
     left = Math.max(4, Math.min(left, window.innerWidth - width - 4));
     bar.style.top = `${top}px`;
