@@ -16,6 +16,10 @@
       'M12 3a9 9 0 0 0 0 18c.83 0 1.5-.67 1.5-1.5 0-.39-.15-.74-.39-1.01-.23-.26-.38-.61-.38-.99 0-.83.67-1.5 1.5-1.5H16c2.76 0 5-2.24 5-5 0-4.42-4.03-8-9-8zm-5.5 9a1.5 1.5 0 1 1 0-3 1.5 1.5 0 0 1 0 3zm3-4a1.5 1.5 0 1 1 0-3 1.5 1.5 0 0 1 0 3zm5 0a1.5 1.5 0 1 1 0-3 1.5 1.5 0 0 1 0 3zm3 4a1.5 1.5 0 1 1 0-3 1.5 1.5 0 0 1 0 3z',
     copy: 'M16 1H4c-1.1 0-2 .9-2 2v14h2V3h12V1zm3 4H8c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h11c1.1 0 2-.9 2-2V7c0-1.1-.9-2-2-2zm0 16H8V7h11v14z',
     delete: 'M6 19c0 1.1.9 2 2 2h8c1.1 0 2-.9 2-2V7H6v12zM19 4h-3.5l-1-1h-5l-1 1H5v2h14V4z',
+    bookmark: 'M17 3H7c-1.1 0-1.99.9-1.99 2L5 21l7-3 7 3V5c0-1.1-.9-2-2-2z',
+    arrow: 'M12 4l-1.41 1.41L16.17 11H4v2h12.17l-5.58 5.59L12 20l8-8z',
+    plus: 'M19 13h-6v6h-2v-6H5v-2h6V5h2v6h6v2z',
+    close: 'M19 6.41 17.59 5 12 10.59 6.41 5 5 6.41 10.59 12 5 17.59 6.41 19 12 13.41 17.59 19 19 17.59 13.41 12z',
     highlighter:
       'M22 24H2v-4h20v4zM13.06 5.19l3.75 3.75L7.75 18H4v-3.75l9.06-9.06zm4.82 2.68-3.75-3.75 1.83-1.83a.996.996 0 0 1 1.41 0l2.34 2.34c.39.39.39 1.02 0 1.41l-1.83 1.83z'
   };
@@ -163,8 +167,91 @@
     const page = currentPage();
     if (!page.highlights.length) return [empty('No highlights on this page yet. Select some text to start.')];
     const shown = HL.data.filterAndSort([page], filters()).pages[0];
-    if (!shown) return [empty('No highlights match your search.')];
-    return [pageCard(shown, { collapsible: false })];
+    const out = [pageHero(page, shown ? shown.highlights.length : 0)];
+    const bookmark = page.highlights.find((h) => h.bookmark);
+    if (bookmark) out.push(jumpCard(bookmark, page));
+    if (!shown) return [...out, empty('No highlights match your search.')];
+
+    // The page's highlights in reading order, on a rail like the timeline.
+    const head = el('div', 'list-bar');
+    const label = el('span', 'muted');
+    label.textContent = 'In reading order';
+    head.append(label);
+    const list = el('ol', 'rail');
+    for (const h of shown.highlights) {
+      const entry = item(h, page, false);
+      entry.classList.add('rail-item');
+      entry.style.setProperty('--dot', h.bookmark ? 'var(--accent)' : HL.colorValue(h.color));
+      list.append(entry);
+    }
+    return [...out, head, list];
+  }
+
+  // The current page at a glance: its title and site, counts, and page actions.
+  function pageHero(page, shownCount) {
+    const all = page.highlights;
+    const hero = el('section', 'page-hero');
+    hero.dataset.key = page.key;
+
+    const top = el('div', 'hero-top');
+    const tile = el('span', 'site-tile big');
+    tile.append(favicon(page));
+    const title = el('div', 'hero-title');
+    const name = el('p');
+    name.textContent = page.title;
+    name.title = page.url;
+    const site = el('span', 'muted');
+    site.textContent = page.site;
+    title.append(name, site);
+    top.append(tile, title);
+
+    const stats = el('div', 'hero-stats');
+    const stat = (n, label, cls = '') => {
+      const box = el('div', `stat ${cls}`.trim());
+      const value = el('strong');
+      value.textContent = String(n);
+      const text = el('span');
+      text.textContent = label;
+      box.append(value, text);
+      return box;
+    };
+    const notes = all.filter((h) => HL.noteOf(h)).length;
+    const toLearn = all.filter((h) => h.learn).length;
+    stats.append(
+      stat(all.length, all.length === 1 ? 'Highlight' : 'Highlights'),
+      stat(notes, notes === 1 ? 'Note' : 'Notes'),
+      stat(toLearn, 'To learn', toLearn ? 'learn' : '')
+    );
+
+    const actions = el('div', 'hero-actions');
+    const filtered = shownCount < all.length;
+    const copy = pillButton('copy', filtered ? `Copy ${shownCount} shown` : 'Copy as Markdown', 'copy-page');
+    const del = pillButton('delete', filtered ? `Delete ${shownCount} shown` : 'Delete all', 'delete-page');
+    del.classList.add('danger');
+    copy.disabled = del.disabled = !shownCount;
+    actions.append(copy, del);
+
+    hero.append(top, stats, actions);
+    return hero;
+  }
+
+  // "Continue reading": the page's bookmark, like the toolbar popup's card.
+  function jumpCard(bookmark, page) {
+    const card = el('button', 'jump-card');
+    card.type = 'button';
+    card.dataset.action = 'open';
+    card.dataset.key = page.key;
+    card.dataset.id = bookmark.id;
+    card.classList.toggle('orphan', bookmark.found === false);
+    card.title = bookmark.found === false ? "The bookmarked line isn't on the page right now" : 'Scroll to your bookmark';
+    card.innerHTML =
+      `<span class="jump-icon"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="${ICONS.bookmark}"/></svg></span>` +
+      '<span class="jump-body"><span class="jump-title">Continue reading</span><span class="jump-text"></span><span class="jump-when"></span></span>' +
+      `<svg class="jump-arrow" viewBox="0 0 24 24" aria-hidden="true"><path d="${ICONS.arrow}"/></svg>`;
+    card.querySelector('.jump-text').textContent = `“${bookmark.text}”`;
+    card.querySelector('.jump-when').textContent =
+      bookmark.found === false ? 'Not on the page right now' : `Saved ${ago(bookmark.createdAt)}`;
+    return card;
   }
 
   function renderPages() {
@@ -547,6 +634,7 @@
       b.style.background = HL.colorValue(name);
       swatches.append(b);
     }
+    swatches.append(addColorButton('Add your own color', 'add-color-item'));
     actions.append(swatches); // opens under the color button
 
     li.append(bar, body);
@@ -654,9 +742,176 @@
         b.setAttribute('aria-pressed', String(state.colors.has(name)));
         b.style.background = HL.colorValue(name);
         return b;
-      })
+      }),
+      addColorButton('Add your own color', 'add-color')
     );
     $('colors').classList.toggle('filtering', state.colors.size > 0);
+  }
+
+  function addColorButton(label, action) {
+    const b = el('button', 'add');
+    b.type = 'button';
+    b.dataset.action = action;
+    b.title = label;
+    b.setAttribute('aria-label', label);
+    b.setAttribute('aria-haspopup', 'dialog');
+    b.innerHTML = `<svg viewBox="0 0 24 24" aria-hidden="true"><path d="${ICONS.plus}"/></svg>`;
+    return b;
+  }
+
+  // ---- Your own colors -----------------------------------------------------
+
+  // A small panel to add a custom color (suggestions, the color picker or a typed
+  // code) and, from the filter row, to remove ones you added. `onAdd(hex)` runs
+  // after the color is saved to the palette.
+  let colorPanel = null;
+  function openColorPanel(anchor, { manage = false, onAdd = null } = {}, rect = anchor.getBoundingClientRect()) {
+    closeColorPanel();
+    const custom = HL.customColors(settings);
+    const taken = HL.palette(settings).map(HL.colorValue);
+    const panel = el('div', 'color-panel');
+    panel.setAttribute('role', 'dialog');
+    panel.setAttribute('aria-label', 'Add your own color');
+
+    const title = el('p', 'cp-title');
+    title.textContent = 'Add your own color';
+    panel.append(title);
+
+    if (manage && custom.length) {
+      const mine = el('div', 'cp-mine');
+      const label = el('span', 'cp-label');
+      label.textContent = 'Your colors';
+      const row = el('div', 'cp-row');
+      for (const color of custom) {
+        const chip = el('span', 'cp-chip');
+        chip.style.background = color;
+        chip.title = color.toUpperCase();
+        const remove = el('button', 'cp-remove');
+        remove.type = 'button';
+        remove.dataset.remove = color;
+        remove.title = `Remove ${color.toUpperCase()}`;
+        remove.setAttribute('aria-label', `Remove ${color.toUpperCase()}`);
+        remove.innerHTML = `<svg viewBox="0 0 24 24" aria-hidden="true"><path d="${ICONS.close}"/></svg>`;
+        chip.append(remove);
+        row.append(chip);
+      }
+      mine.append(label, row);
+      panel.append(mine);
+    }
+
+    if (custom.length >= HL.MAX_CUSTOM_COLORS) {
+      const full = el('p', 'cp-note');
+      full.textContent = `You have ${HL.MAX_CUSTOM_COLORS} colors of your own. Remove one to add another.`;
+      panel.append(full);
+    } else {
+      const choices = HL.SUGGESTED_COLORS.filter((c) => !taken.includes(c));
+      const suggestions = el('div', 'cp-row cp-suggestions');
+      for (const color of choices) {
+        const b = el('button');
+        b.type = 'button';
+        b.dataset.suggest = color;
+        b.title = color.toUpperCase();
+        b.setAttribute('aria-label', `Use ${color.toUpperCase()}`);
+        b.style.background = color;
+        suggestions.append(b);
+      }
+      const form = el('form', 'cp-form');
+      form.noValidate = true;
+      form.innerHTML =
+        '<input type="color" aria-label="Pick a color" />' +
+        '<input type="text" maxlength="7" spellcheck="false" autocomplete="off" aria-label="Color code" />' +
+        '<button type="submit" class="text-btn primary">Add</button>';
+      const error = el('p', 'cp-error');
+      error.setAttribute('role', 'alert');
+      error.hidden = true;
+      if (choices.length) panel.append(suggestions);
+      panel.append(form, error);
+
+      const [picker, code] = form.querySelectorAll('input');
+      const setDraft = (color, typed = false) => {
+        const hex = HL.parseHex(color);
+        if (hex) picker.value = hex;
+        if (!typed) code.value = (hex || color).toUpperCase();
+        for (const b of suggestions.children) b.setAttribute('aria-pressed', String(b.dataset.suggest === hex));
+        error.hidden = true;
+        code.removeAttribute('aria-invalid');
+      };
+      const fail = (message) => {
+        error.textContent = message;
+        error.hidden = false;
+        code.setAttribute('aria-invalid', 'true');
+        code.focus();
+      };
+      suggestions.addEventListener('click', (e) => {
+        const b = e.target.closest('[data-suggest]');
+        if (b) setDraft(b.dataset.suggest);
+      });
+      picker.addEventListener('input', () => setDraft(picker.value));
+      code.addEventListener('input', () => setDraft(code.value, true));
+      form.addEventListener('submit', async (e) => {
+        e.preventDefault();
+        const hex = HL.parseHex(code.value);
+        if (!hex) return fail('Enter a color code like #C4B5FD.');
+        if (HL.palette(settings).map(HL.colorValue).includes(hex)) return fail("That color's already in your colors.");
+        await saveCustomColors([...HL.customColors(settings), hex]);
+        closeColorPanel();
+        if (onAdd) await onAdd(hex);
+      });
+      setDraft(choices[0] || '#c4b5fd');
+    }
+
+    panel.addEventListener('click', async (e) => {
+      const remove = e.target.closest('[data-remove]');
+      if (!remove) return;
+      await saveCustomColors(HL.customColors(settings).filter((c) => c !== remove.dataset.remove));
+      // Show the updated list in the same place; the filter row's "+" was redrawn.
+      const fresh = manage ? $('colors').querySelector('.add') : anchor;
+      openColorPanel(fresh && fresh.isConnected ? fresh : anchor, { manage, onAdd }, rect);
+    });
+    panel.addEventListener('keydown', (e) => {
+      if (e.key !== 'Escape') return;
+      e.stopPropagation();
+      closeColorPanel();
+      if (anchor.isConnected) anchor.focus();
+    });
+
+    document.body.append(panel);
+    placePanel(panel, rect);
+    anchor.setAttribute('aria-expanded', 'true');
+    colorPanel = { panel, anchor };
+    const code = panel.querySelector('input[type=text]');
+    if (code) {
+      code.focus();
+      code.select();
+    }
+  }
+
+  // Under the button that opened it (above when there's no room), inside the window.
+  function placePanel(panel, rect) {
+    const { width, height } = panel.getBoundingClientRect();
+    let top = rect.bottom + 8;
+    if (top + height > innerHeight - 8) top = Math.max(8, rect.top - height - 8);
+    const left = Math.min(Math.max(8, rect.right - width), innerWidth - width - 8);
+    panel.style.top = `${top}px`;
+    panel.style.left = `${Math.max(8, left)}px`;
+  }
+
+  function closeColorPanel() {
+    if (!colorPanel) return;
+    colorPanel.panel.remove();
+    colorPanel.anchor.setAttribute('aria-expanded', 'false');
+    colorPanel = null;
+  }
+
+  // Saves the custom colors. A removed default color falls back to yellow;
+  // highlights in a removed color keep it.
+  async function saveCustomColors(list) {
+    const patch = { customColors: list };
+    if (!HL.isColor(settings.defaultColor) || (HL.parseHex(settings.defaultColor) && !list.includes(settings.defaultColor))) {
+      patch.defaultColor = HL.DEFAULT_SETTINGS.defaultColor;
+    }
+    settings = HL.cleanSettings(await HL.setSettings(patch));
+    buildColorChips();
   }
 
   function iconButton(icon, label, action) {
@@ -756,6 +1011,19 @@
       case 'color':
         closePickers();
         await HL.mutatePage(key, (list) => list.map((h) => (h.id === id ? { ...h, color: target.dataset.color } : h)));
+        break;
+      case 'add-color-item':
+        // Add a color of your own and use it for this highlight.
+        if (colorPanel && colorPanel.anchor === target) {
+          closeColorPanel();
+          break;
+        }
+        openColorPanel(target, {
+          onAdd: async (hex) => {
+            closePickers();
+            await HL.mutatePage(key, (list) => list.map((h) => (h.id === id ? { ...h, color: hex } : h)));
+          }
+        });
         break;
       case 'note': {
         if (state.editing && state.editing.id === id && state.editing.key === key) break;
@@ -985,7 +1253,7 @@
         }
         return; // Escape is handled below, on document
       }
-      if ((e.key === 'Enter' || e.key === ' ') && e.target.matches('.item-main')) {
+      if ((e.key === 'Enter' || e.key === ' ') && e.target.matches('.item-main, .learn-passage')) {
         e.preventDefault();
         onAction(e);
       }
@@ -1012,6 +1280,11 @@
     $('colors').addEventListener('click', (e) => {
       const b = e.target.closest('button');
       if (!b) return;
+      if (b.dataset.action === 'add-color') {
+        if (colorPanel && colorPanel.anchor === b) closeColorPanel();
+        else openColorPanel(b, { manage: true, onAdd: (hex) => toast(`Added ${hex.toUpperCase()} to your colors`) });
+        return;
+      }
       const on = !state.colors.has(b.dataset.color);
       if (on) state.colors.add(b.dataset.color);
       else state.colors.delete(b.dataset.color);
@@ -1049,11 +1322,13 @@
     document.addEventListener('click', (e) => {
       if (!e.target.closest('.menu')) setMenu(false);
       if (!e.target.closest('.item.picking')) closePickers();
+      if (colorPanel && !e.target.closest('.color-panel, [data-action^="add-color"]')) closeColorPanel();
     });
     document.addEventListener('keydown', (e) => {
       if (e.key !== 'Escape') return;
       setMenu(false);
       closePickers();
+      closeColorPanel();
       cancelNote();
     });
 

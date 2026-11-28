@@ -13,6 +13,8 @@
   };
   HL.COLOR_NAMES = Object.keys(HL.COLORS);
   HL.MAX_CUSTOM_COLORS = 5;
+  // Offered when adding a custom color (the ones already in the palette are left out).
+  HL.SUGGESTED_COLORS = ['#c4b5fd', '#a5b4fc', '#99f6e4', '#bef264', '#fde68a', '#fdba74', '#fda4af', '#f0abfc', '#d6d3d1'];
 
   HL.PAGE_KEY_PREFIX = 'hl:';
   HL.SETTINGS_KEY = 'settings';

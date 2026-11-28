@@ -29,7 +29,7 @@ Read the web the way you read a good book: highlight what matters, write notes i
 HIGHLIGHT AS YOU READ
 Find the important parts again in seconds, instead of rereading the whole page.
 • Select text and pick a color from the small toolbar, or press Alt+Shift+H. Use the colors to tell ideas, quotes and to-dos apart.
-• Make the palette yours: add up to five colors of your own from the toolbar icon, by color code (like #C4B5FD) or with the color picker.
+• Make the palette yours: add up to five colors of your own from the toolbar icon or the library, by color code (like #C4B5FD) or with the color picker.
 • Click a highlight to recolor it, copy it, or remove it.
 • Highlights come back automatically when you return to the page, even if the page has changed a little.
 
