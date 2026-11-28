@@ -289,12 +289,33 @@
     return pages.reduce((n, p) => n + p.highlights.filter((h) => h.learn).length, 0);
   }
 
+  // The timeline: highlights grouped by day ("Today", "Yesterday", ...) on a rail,
+  // each with a dot in its color.
   function timelineList(timeline) {
-    const list = el('ul', 'items');
-    list.append(...timeline.slice(0, state.timelineLimit).map(({ highlight, page }) => item(highlight, page, true)));
-    const box = el('div', 'timeline');
-    box.append(list);
-    const out = [box];
+    const out = [];
+    let list = null;
+    let day = null;
+    for (const { highlight, page } of timeline.slice(0, state.timelineLimit)) {
+      const label = dayLabel(highlight.createdAt);
+      if (label !== day) {
+        day = label;
+        const section = el('section', 'day');
+        const heading = el('h2', 'day-label');
+        const name = el('span');
+        name.textContent = label;
+        const count = el('span', 'day-count');
+        heading.append(name, count);
+        list = el('ol', 'rail');
+        section.append(heading, list);
+        out.push(section);
+      }
+      const entry = item(highlight, page, true);
+      entry.classList.add('rail-item');
+      entry.style.setProperty('--dot', highlight.bookmark ? 'var(--accent)' : HL.colorValue(highlight.color));
+      list.append(entry);
+      const count = list.parentNode.querySelector('.day-count');
+      count.textContent = String(list.children.length);
+    }
     const left = timeline.length - state.timelineLimit;
     if (left > 0) {
       const more = el('button', 'more');
@@ -402,11 +423,14 @@
       tag.textContent = 'Learn more';
       meta.append(tag);
     }
+    // On the timeline (showPage) the day is the heading, so the time of day is
+    // enough, and the page gets its icon.
+    if (showPage) meta.append(favicon(page));
     meta.append(
       [
         showPage ? page.title : '',
         showPage ? page.site : '',
-        orphan ? 'Not found on the page right now' : ago(h.createdAt)
+        orphan ? 'Not found on the page right now' : showPage ? timeOfDay(h.createdAt) : ago(h.createdAt)
       ]
         .filter(Boolean)
         .join(' · ')
@@ -597,6 +621,26 @@
 
   function ago(time) {
     return HL.ago(time);
+  }
+
+  // "Today", "Yesterday", a weekday within the last week, then a date.
+  const WEEKDAY = new Intl.DateTimeFormat(undefined, { weekday: 'long' });
+  const DATE = new Intl.DateTimeFormat(undefined, { month: 'long', day: 'numeric' });
+  const DATE_YEAR = new Intl.DateTimeFormat(undefined, { year: 'numeric', month: 'long', day: 'numeric' });
+  const TIME = new Intl.DateTimeFormat(undefined, { hour: 'numeric', minute: '2-digit' });
+  function dayLabel(time) {
+    if (!time) return 'Earlier';
+    const date = new Date(time);
+    const startOf = (d) => new Date(d.getFullYear(), d.getMonth(), d.getDate()).getTime();
+    const days = Math.round((startOf(new Date()) - startOf(date)) / 86400000);
+    if (days <= 0) return 'Today';
+    if (days === 1) return 'Yesterday';
+    if (days < 7) return WEEKDAY.format(date);
+    return date.getFullYear() === new Date().getFullYear() ? DATE.format(date) : DATE_YEAR.format(date);
+  }
+
+  function timeOfDay(time) {
+    return time ? TIME.format(time) : '';
   }
 
   function plural(n) {

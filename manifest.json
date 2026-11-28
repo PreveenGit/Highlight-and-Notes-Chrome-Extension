@@ -2,7 +2,7 @@
   "manifest_version": 3,
   "key": "MIIBIjANBgkqhkiG9w0BAQEFAAOCAQ8AMIIBCgKCAQEAmd6yGQC4uUeLzX9gMhIXzpuGgeJSfbSdvis89+I15DHy1aeqDh/I37kIvjKdiBJW78/UZfl8rhLh4FUjI8LIHC7FP7lMpGJ/mcozGLNUmMa/XWADC1qoYdp2wWNAU/J4BpRQjYf7iIx8e4ucwP5R0s0uYbkEM9d7BXwNmmG6nVQLsMOIa4KxM0xRVI43ckcNEXPnpv8J7R+dBhX6oB5DtQrM4FfSu98s/uAU7Yhb4oPynYLOw2Nww3T0xiG2sCIRXbwCWkyMIEDJFXlIysoX1jWdcSpZl/rZMqTjNEOJmuC+trcRrjpRatZQgfwA5aycbftYTWNxwxDqkuUD8SFe8QIDAQAB",
   "name": "Highlight",
-  "version": "1.6.0",
+  "version": "1.6.1",
   "description": "Highlight text on any page, add notes, bookmark your place and mark what to learn later. Everything comes back when you return.",
   "permissions": ["storage", "unlimitedStorage", "sidePanel", "favicon"],
   "background": {

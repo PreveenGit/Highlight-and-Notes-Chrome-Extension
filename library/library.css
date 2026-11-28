@@ -10,6 +10,7 @@
 }
 
 body {
+  --page: var(--bg); /* the page background, for rings that cut into it */
   margin: 0;
   min-width: 280px;
   background: var(--bg);
@@ -782,6 +783,106 @@ main {
   background: var(--hover);
 }
 
+/* ---- Timeline ---- */
+
+.day + .day {
+  margin-top: 18px;
+}
+
+/* "Today 3 ───────" */
+.day-label {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin: 0 0 10px;
+  font-size: 13px;
+  font-weight: 650;
+}
+
+.day-label::after {
+  content: '';
+  flex: 1;
+  height: 1px;
+  background: var(--line);
+}
+
+.day-count {
+  min-width: 20px;
+  padding: 0 6px;
+  border-radius: 999px;
+  background: var(--hover);
+  color: var(--muted);
+  font-size: 11px;
+  font-weight: 600;
+  line-height: 18px;
+  text-align: center;
+}
+
+/* The rail: a line down the left with a dot per highlight in its color. */
+.rail {
+  position: relative;
+  margin: 0;
+  padding: 0 0 0 24px;
+  list-style: none;
+}
+
+.rail::before {
+  content: '';
+  position: absolute;
+  left: 8px;
+  top: 14px;
+  bottom: 14px;
+  width: 2px;
+  border-radius: 1px;
+  background: var(--line);
+}
+
+.rail-item {
+  border: 1px solid var(--line);
+  background: var(--bg);
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.04);
+  transition: box-shadow 0.15s, border-color 0.15s;
+}
+
+.rail-item + .rail-item {
+  margin-top: 8px;
+}
+
+.rail-item:hover,
+.rail-item:focus-within {
+  border-color: color-mix(in srgb, var(--fg) 14%, var(--line));
+  background: var(--bg);
+  box-shadow: 0 6px 18px rgba(0, 0, 0, 0.07);
+}
+
+.rail-item::before {
+  content: '';
+  position: absolute;
+  left: -21px;
+  top: 15px;
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+  background: var(--dot);
+  box-shadow: 0 0 0 3px var(--page), 0 0 0 4px color-mix(in srgb, var(--fg) 14%, transparent);
+}
+
+/* The dot shows the color, so the bar isn't needed here. */
+.rail-item > .bar {
+  display: none;
+}
+
+/* The page icon at the start of the meta line. */
+.item .meta .favicon {
+  display: inline-grid;
+  width: 14px;
+  height: 14px;
+  margin-right: 6px;
+  border-radius: 4px;
+  font-size: 8px;
+  vertical-align: -2px;
+}
+
 /* ---- To learn ---- */
 
 /* The count on the To learn tab. */
@@ -1010,12 +1111,6 @@ main {
   color: var(--learn);
 }
 
-/* Two columns of cards in a tab. */
-body.in-tab .learn-list {
-  grid-template-columns: repeat(auto-fill, minmax(340px, 1fr));
-  align-items: start;
-}
-
 /* ---- Toast ---- */
 
 .toast {
@@ -1061,6 +1156,7 @@ body.in-tab .learn-list {
 /* ---- Full tab ---- */
 
 body.in-tab {
+  --page: var(--surface);
   background: var(--surface);
 }
 
@@ -1097,6 +1193,7 @@ body.in-tab .filter-row {
 /* Dark: cards lighter than the page, as surfaces rise toward the viewer. */
 @media (prefers-color-scheme: dark) {
   body.in-tab {
+    --page: var(--bg);
     background: var(--bg);
   }
 
@@ -1106,7 +1203,8 @@ body.in-tab .filter-row {
 
   body.in-tab .card,
   body.in-tab .timeline,
-  body.in-tab .learn-card {
+  body.in-tab .learn-card,
+  body.in-tab .rail-item {
     background: var(--surface);
   }
 }
