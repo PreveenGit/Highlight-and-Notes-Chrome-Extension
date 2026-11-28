@@ -292,7 +292,7 @@ main {
   fill: currentColor;
 }
 
-/* A page in "All pages", and the list in the other views. */
+/* A page in "All pages" and "This page". */
 .card,
 .timeline {
   border: 1px solid var(--line);
@@ -303,7 +303,10 @@ main {
 
 /* No overflow clipping, so the color picker can open past the card's edge. */
 .card {
+  --card-bg: var(--bg);
   margin-bottom: 12px;
+  background: var(--card-bg);
+  container-type: inline-size; /* compact header in the side panel */
   transition: box-shadow 0.15s, border-color 0.15s;
 }
 
@@ -315,36 +318,92 @@ main {
   border-color: color-mix(in srgb, var(--accent) 55%, var(--line));
 }
 
+/* Pages count and Collapse all, above the cards. */
+.list-bar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  margin: 0 2px 10px 4px;
+  font-size: 12px;
+}
+
+.link-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  height: 28px;
+  padding: 0 10px 0 6px;
+  border: 0;
+  border-radius: 999px;
+  background: none;
+  color: var(--muted);
+  font-size: 12px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: background-color 0.12s, color 0.12s;
+}
+
+.link-btn:hover {
+  background: var(--hover);
+  color: var(--fg);
+}
+
+.link-btn svg {
+  width: 18px;
+  height: 18px;
+  fill: currentColor;
+}
+
+.link-btn.up svg {
+  transform: rotate(180deg);
+}
+
 .card-head {
   display: flex;
   align-items: center;
-  gap: 8px;
-  padding: 10px 8px 10px 6px;
+  gap: 10px;
+  padding: 12px 10px 12px 12px;
   border-bottom: 1px solid var(--line);
   border-radius: 15px 15px 0 0;
-  background: color-mix(in srgb, var(--fg) 3%, transparent);
+  background: color-mix(in srgb, var(--fg) 2.5%, transparent);
+}
+
+.card-head[data-action='toggle'] {
+  cursor: pointer;
 }
 
 .card.collapsed .card-head {
   border-bottom: 0;
-  border-radius: 15px;
 }
 
-/* "This page": no collapse button before the site icon. */
 .card-head.fixed {
-  padding-left: 12px;
+  padding-right: 8px;
 }
 
-.card-head .toggle svg {
-  transition: transform 0.15s;
+/* The site's icon in a soft tile; a letter when the site has no icon. */
+.site-tile {
+  flex: none;
+  display: grid;
+  place-items: center;
+  width: 36px;
+  height: 36px;
+  overflow: hidden;
+  border-radius: 10px;
+  background: var(--card-bg);
+  box-shadow: inset 0 0 0 1px var(--line);
 }
 
-.card.collapsed .toggle svg {
-  transform: rotate(-90deg);
+.site-tile .favicon {
+  width: 18px;
+  height: 18px;
 }
 
-.card.collapsed .items {
-  display: none;
+.site-tile .avatar {
+  width: 100%;
+  height: 100%;
+  border-radius: 0;
+  font-size: 14px;
 }
 
 .favicon {
@@ -373,7 +432,8 @@ main {
   display: block;
   overflow: hidden;
   color: var(--fg);
-  font-weight: 600;
+  font-size: 14px;
+  font-weight: 650;
   text-decoration: none;
   white-space: nowrap;
   text-overflow: ellipsis;
@@ -385,6 +445,7 @@ main {
 
 .card-title .meta {
   display: block;
+  margin-top: 1px;
   overflow: hidden;
   font-size: 12px;
   white-space: nowrap;
@@ -399,6 +460,117 @@ main {
   color: var(--bg);
   font-size: 11px;
   font-weight: 600;
+}
+
+/* The colors a page uses, as overlapping dots. */
+.color-dots {
+  flex: none;
+  display: flex;
+  padding-left: 4px;
+}
+
+.color-dots span {
+  width: 14px;
+  height: 14px;
+  margin-left: -4px;
+  border-radius: 50%;
+  box-shadow: 0 0 0 2px color-mix(in srgb, var(--fg) 2.5%, var(--card-bg)), inset 0 0 0 1px rgba(0, 0, 0, 0.12);
+}
+
+.count-pill {
+  flex: none;
+  min-width: 26px;
+  padding: 0 8px;
+  border-radius: 999px;
+  background: var(--hover);
+  color: var(--muted);
+  font-size: 12px;
+  font-weight: 650;
+  line-height: 22px;
+  text-align: center;
+}
+
+/* Copy and delete the page: on hover, keeping their space. */
+.card-actions {
+  flex: none;
+  display: flex;
+  gap: 1px;
+  opacity: 0;
+  transition: opacity 0.12s;
+}
+
+.card-head:hover .card-actions,
+.card-head:focus-within .card-actions,
+.card-head.fixed .card-actions {
+  opacity: 1;
+}
+
+.card-head .toggle svg {
+  transform: rotate(180deg);
+  transition: transform 0.15s;
+}
+
+.card.collapsed .toggle svg {
+  transform: none;
+}
+
+/* A collapsed page: its first highlight and how many more. */
+.card-preview {
+  display: flex;
+  align-items: baseline;
+  gap: 8px;
+  margin: -4px 0 0;
+  padding: 0 14px 12px 60px;
+  color: var(--muted);
+  font-size: 12.5px;
+  cursor: pointer;
+}
+
+.card-preview > span:first-child {
+  min-width: 0;
+  overflow: hidden;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+}
+
+.more-count {
+  flex: none;
+  padding: 0 7px;
+  border-radius: 999px;
+  background: var(--hover);
+  font-size: 11px;
+  font-weight: 600;
+}
+
+/* Narrow (side panel): fewer extras in the header, so the title has room. Copy
+   and delete take the count's place while the header is hovered. */
+@container (max-width: 440px) {
+  .color-dots {
+    display: none;
+  }
+
+  .card-head:not(.fixed) .card-actions {
+    display: none;
+  }
+
+  .card-head:not(.fixed):hover .card-actions,
+  .card-head:not(.fixed):focus-within .card-actions {
+    display: flex;
+  }
+
+  .card-head:not(.fixed):hover .count-pill,
+  .card-head:not(.fixed):focus-within .count-pill {
+    display: none;
+  }
+
+  .site-tile {
+    width: 32px;
+    height: 32px;
+  }
+
+  .card-preview {
+    padding-left: 56px;
+  }
 }
 
 .items {
@@ -1201,7 +1373,10 @@ body.in-tab .filter-row {
     background: color-mix(in srgb, var(--bg) 88%, transparent);
   }
 
-  body.in-tab .card,
+  body.in-tab .card {
+    --card-bg: var(--surface);
+  }
+
   body.in-tab .timeline,
   body.in-tab .learn-card,
   body.in-tab .rail-item {

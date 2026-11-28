@@ -171,7 +171,27 @@
     if (!pages.length) return [empty('No highlights yet. Select text on any page and pick a color.')];
     const shown = HL.data.filterAndSort(pages, filters()).pages;
     if (!shown.length) return [empty('No highlights match your search.')];
-    return shown.map(pageCard);
+    return [pagesBar(shown), ...shown.map((page) => pageCard(page))];
+  }
+
+  // Above the page cards: how many are shown, and Collapse all / Expand all.
+  function pagesBar(shown) {
+    const bar = el('div', 'list-bar');
+    const label = el('span', 'muted');
+    const count = shown.reduce((sum, p) => sum + p.highlights.length, 0);
+    label.textContent = `${shown.length} page${plural(shown.length)} · ${count} highlight${plural(count)}`;
+    const allCollapsed = shown.every((p) => state.collapsed.has(p.key));
+    const button = el('button', 'link-btn');
+    button.type = 'button';
+    button.dataset.action = allCollapsed ? 'expand-all' : 'collapse-all';
+    button.dataset.keys = shown.map((p) => p.key).join('\n');
+    button.innerHTML = `<svg viewBox="0 0 24 24" aria-hidden="true"><path d="${ICONS.chevron}"/></svg>`;
+    button.classList.toggle('up', !allCollapsed);
+    const text = el('span');
+    text.textContent = allCollapsed ? 'Expand all' : 'Collapse all';
+    button.append(text);
+    bar.append(label, button);
+    return bar;
   }
 
   function renderTimeline() {
@@ -327,10 +347,14 @@
     return out;
   }
 
-  // A page with its highlights. In "This page" it can't collapse, and the
+  // A page with its highlights: the site icon in a tile, the title and site, the
+  // colors used, a count, the page actions and (in All pages) a collapse toggle.
+  // Clicking the header's empty space collapses it too; a collapsed card shows its
+  // first highlight as a preview. In "This page" it can't collapse, and the
   // "Current tab" badge would only repeat the view's name.
   function pageCard(page, { collapsible = true } = {}) {
     const collapsed = collapsible && state.collapsed.has(page.key);
+    const n = page.highlights.length;
     const card = el('section', 'card');
     card.dataset.key = page.key;
     card.classList.toggle('current', collapsible && isCurrent(page.key));
@@ -338,17 +362,18 @@
 
     const head = el('div', 'card-head');
     head.classList.toggle('fixed', !collapsible);
-    let toggle = null;
     if (collapsible) {
-      toggle = iconButton('chevron', collapsed ? 'Expand' : 'Collapse', 'toggle');
-      toggle.classList.add('toggle');
-      toggle.setAttribute('aria-expanded', String(!collapsed));
+      head.dataset.action = 'toggle';
+      head.title = collapsed ? 'Expand' : 'Collapse';
     }
+
+    const tile = el('span', 'site-tile');
+    tile.append(favicon(page));
 
     const title = el('div', 'card-title');
     const link = el('a');
     link.href = page.url;
-    link.title = page.url;
+    link.title = isCurrent(page.key) ? page.url : `Open ${page.url}`;
     link.dataset.action = 'open-page';
     appendWithHits(link, page.title, HL.data.searchTerms(state.query));
     const meta = el('span', 'meta muted');
@@ -357,19 +382,61 @@
       badge.textContent = 'Current tab';
       meta.append(badge);
     }
-    const n = page.highlights.length;
-    meta.append([page.site, `${n} highlight${plural(n)}`, ago(page.lastAt)].filter(Boolean).join(' · '));
+    meta.append([page.site, ago(page.lastAt)].filter(Boolean).join(' · '));
     title.append(link, meta);
 
-    head.append(
-      ...(toggle ? [toggle] : []),
-      favicon(page),
-      title,
+    const count = el('span', 'count-pill');
+    count.textContent = String(n);
+    count.title = `${n} highlight${plural(n)}`;
+
+    const actions = el('div', 'card-actions');
+    actions.append(
       iconButton('copy', 'Copy as Markdown', 'copy-page'),
       iconButton('delete', `Delete ${n} highlight${plural(n)}`, 'delete-page')
     );
-    card.append(head, itemList(page.highlights, page, false));
+
+    head.append(tile, title, colorDots(page.highlights), count, actions);
+    if (collapsible) {
+      const toggle = iconButton('chevron', collapsed ? 'Expand' : 'Collapse', 'toggle');
+      toggle.classList.add('toggle');
+      toggle.setAttribute('aria-expanded', String(!collapsed));
+      head.append(toggle);
+    }
+    card.append(head);
+
+    if (collapsed) {
+      const preview = el('p', 'card-preview');
+      preview.dataset.action = 'toggle';
+      const first = el('span');
+      first.textContent = `“${page.highlights[0].text}”`;
+      preview.append(first);
+      if (n > 1) {
+        const more = el('span', 'more-count');
+        more.textContent = `+${n - 1} more`;
+        preview.append(more);
+      }
+      card.append(preview);
+    } else {
+      card.append(itemList(page.highlights, page, false));
+    }
     return card;
+  }
+
+  // The colors a page's highlights use, most used first (at most five).
+  function colorDots(highlights) {
+    const counts = new Map();
+    for (const h of highlights) {
+      if (h.bookmark) continue;
+      counts.set(h.color, (counts.get(h.color) || 0) + 1);
+    }
+    const box = el('span', 'color-dots');
+    box.setAttribute('aria-hidden', 'true');
+    for (const [color] of [...counts].sort((a, b) => b[1] - a[1]).slice(0, 5)) {
+      const dot = el('span');
+      dot.style.background = HL.colorValue(color);
+      box.append(dot);
+    }
+    return box;
   }
 
   function itemList(highlights, page, showPage) {
@@ -670,6 +737,14 @@
       case 'toggle':
         if (state.collapsed.has(key)) state.collapsed.delete(key);
         else state.collapsed.add(key);
+        render();
+        break;
+      case 'collapse-all':
+      case 'expand-all':
+        for (const k of target.dataset.keys.split('\n')) {
+          if (action === 'collapse-all') state.collapsed.add(k);
+          else state.collapsed.delete(k);
+        }
         render();
         break;
       case 'pick': {
